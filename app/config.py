@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     ingest_max_chunks: int = 40  # 每条资料最多处理多少段（控制成本）
     # 和已有卡片的向量相似度超过这个值视为重复。可在 .env 用 DEDUP_SIMILARITY 调整：
     # 调低去重更狠（可能误伤相近但不同的知识点），调高更宽松（可能留下换了说法的重复）
-    dedup_similarity: float = 0.88
+    # 实测（text-embedding-v3）：0.94 以上是同一知识点；0.85～0.88 是换了说法的重复；0.80 左右只是部分重叠
+    dedup_similarity: float = 0.85
 
     products_dir: Path = ROOT / "products"
     channels_dir: Path = ROOT / "channels"

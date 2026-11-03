@@ -56,6 +56,8 @@ class IngestResult:
     dropped_copy: int = 0
     dropped_dup: int = 0
     rewritten: int = 0
+    trimmed: int = 0  # 核对时删掉了原文没有的内容
+    dropped_unsupported: int = 0  # 核对时发现原文无依据而丢弃
     error: str = ""
     notes: list[str] = field(default_factory=list)
     cards: list = field(default_factory=list)  # 试跑模式下的提取结果
@@ -145,7 +147,7 @@ EXTRACT_SYSTEM = f"""你是健康科普编辑，负责把资料整理成「知�
 2. 每张卡片讲一个知识点：topic 是 15 字以内的主题；points 是 40 到 120 字的要点。
 3. points 必须用你自己的话重新表达，不能照抄原文句子（古籍原句可以在引号里引用不超过 10 个字）。
 4. 不要提取具体药物名称、用药剂量、处方和方剂组成。
-5. 保留原文里的关键数字（如时长、温度、年龄段），不要编造原文没有的数字和结论。
+5. 只写原文明确表达的内容。保留原文里的关键数字（如时长、温度、年龄段）；不要补充原文没有的数字、结论、原理解释、中医或西医理论、评价。
 6. risk_level：
    - low：一般生活方式和常识（作息、环境、饮食习惯、运动习惯等）
    - mid：涉及身体功能和效果的说法、研究结论、生理指标和医学数值（血压、血糖、心率、体温等）、特定人群的一般建议
@@ -202,6 +204,37 @@ def enforce_risk(card: CardIn) -> CardIn:
     return card
 
 
+VERIFY_SYSTEM = """你是严谨的核对员。下面给出一段原资料，以及从中提取的知识卡片。请逐条核对：
+- 卡片里如果有原资料中没有的内容（额外的原理解释、理论、评价、数字、结论），删掉这些部分，其余保持不变，不要补充任何新内容。
+- 如果卡片的主要内容在原资料里找不到依据，标记 keep 为 false。
+输出 JSON 数组，顺序和数量与输入的卡片一致：[{"keep": true, "points": "核对修正后的要点"}]"""
+
+
+def verify_cards(llm: LLM, chunk: str, cards: list[CardIn], result: "IngestResult") -> list[CardIn]:
+    """逐条对照原文核对，删掉原文没有的内容；原文找不到依据的卡片丢弃。"""
+    if not cards:
+        return []
+    payload = json.dumps([{"topic": c.topic, "points": c.points} for c in cards], ensure_ascii=False)
+    raw = llm.chat([{"role": "system", "content": VERIFY_SYSTEM},
+                    {"role": "user", "content": f"原资料：\n{chunk}\n\n知识卡片：\n{payload}"}], temperature=0).text
+    verdicts = parse_cards(raw)
+    if len(verdicts) != len(cards):
+        result.notes.append("核对结果格式不对，本段卡片按原样保留，请审核时留意")
+        return cards
+    out = []
+    for c, v in zip(cards, verdicts):
+        if v.get("keep") is False:
+            result.dropped_unsupported += 1
+            result.notes.append(f"核对丢弃（原文无依据）：「{c.topic}」")
+            continue
+        points = str(v.get("points") or "").strip()
+        if points and points != c.points:
+            result.trimmed += 1
+            c = enforce_risk(c.model_copy(update={"points": points}))
+        out.append(c)
+    return out
+
+
 REWRITE_SYSTEM = """下面这些知识卡片的 points 和原资料的句子重合太多。请逐条用你自己的话重新表达，意思和关键数字不变，40 到 120 字。
 输出 JSON 数组，顺序与输入一致，每项只包含 topic 和 points：[{"topic": "...", "points": "..."}]"""
 
@@ -249,6 +282,7 @@ def process_chunk(session: Session, llm: LLM, chunk: str, src: SourceIn, result:
     settings = get_settings()
     cards = extract_cards(llm, chunk, src)
     result.extracted += len(cards)
+    cards = verify_cards(llm, chunk, cards, result)
 
     # 照搬原文的卡片改写一次，仍然照搬的丢弃
     clean, copied = _split_copied(cards, chunk, settings.copy_ngram)

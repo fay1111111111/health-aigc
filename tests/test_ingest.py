@@ -19,6 +19,11 @@ def reply(*cards):
     return json.dumps(list(cards), ensure_ascii=False)
 
 
+def ok(*cards):
+    """核对环节的回复：逐条保留、内容不变。"""
+    return json.dumps([{"keep": True, "points": c["points"]} for c in cards], ensure_ascii=False)
+
+
 @pytest.fixture
 def session(client):
     with db.SessionLocal() as s:
@@ -38,12 +43,13 @@ def test_parse_cards_tolerates_code_fence():
 
 
 def test_ingest_routes_by_risk(session, fake_llm):
-    fake_llm.replies = [reply(
+    cards = [
         {"topic": "睡眠时长因人而异", "points": "一般建议成年人每晚睡够七到八个钟头，不过每个人需要的睡眠量并不完全一样。",
          "risk_level": "low", "domain": "睡眠"},
         {"topic": "睡眠不足与慢病", "points": "长期缺觉可能和多种慢性疾病的发生有关联，出现明显不适应当及时就医检查。",
          "risk_level": "high", "domain": "慢病预防"},
-    )]
+    ]
+    fake_llm.replies = [reply(*cards), ok(*cards)]
     r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
     assert r.status == "done" and r.added == 1 and r.pending == 1
 
@@ -59,14 +65,15 @@ COPIED = "卧室温度保持适宜、光线偏暗，有助于入睡。睡前避�
 
 
 def test_copied_card_rewritten_once_then_dropped(session, fake_llm):
-    fake_llm.replies = [reply({"topic": "照抄", "points": COPIED, "risk_level": "low"}),
-                        reply({"topic": "照抄", "points": COPIED})]  # 改写后仍照抄
+    card = {"topic": "照抄", "points": COPIED, "risk_level": "low"}
+    fake_llm.replies = [reply(card), ok(card), reply({"topic": "照抄", "points": COPIED})]  # 改写后仍照抄
     r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
     assert r.dropped_copy == 1 and r.rewritten == 0 and r.added == 0
 
 
 def test_copied_card_rewritten_successfully(session, fake_llm):
-    fake_llm.replies = [reply({"topic": "卧室环境", "points": COPIED, "risk_level": "low"}),
+    card = {"topic": "卧室环境", "points": COPIED, "risk_level": "low"}
+    fake_llm.replies = [reply(card), ok(card),
                         reply({"topic": "卧室环境", "points": "把卧室布置得暗一些、温度合适，更容易睡着；临睡前别做太激烈的运动，也少喝酒。"})]
     r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
     assert r.rewritten == 1 and r.added == 1 and r.dropped_copy == 0
@@ -92,7 +99,7 @@ def test_dry_run_writes_nothing(session, fake_llm):
 
 def test_dry_run_dedups_across_sources(session, fake_llm):
     card = {"topic": "规律作息", "points": "每天在差不多的时间上床和起床，周末也尽量别差太多，身体的节律会更稳定。", "risk_level": "low"}
-    fake_llm.replies = [reply(card), reply(card)]
+    fake_llm.replies = [reply(card), ok(card), reply(card), ok(card)]
     seen = []
     src2 = ingest.SourceIn(url="https://example.gov.cn/repost", title="转载", publisher="另一个网站", pool="common")
     r1 = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda u: ARTICLE, dry_run=True, seen=seen)
@@ -129,7 +136,7 @@ def test_duplicate_card_is_dropped(session, fake_llm, monkeypatch):
     monkeypatch.setattr(fake_llm, "embed", lambda texts: original([t.split("\n", 1)[-1] for t in texts]))
     card = {"topic": "睡前少喝酒", "points": "临睡前喝酒看似容易犯困，其实会让后半夜睡得更浅、更容易醒。", "risk_level": "low"}
     same_meaning = dict(card, topic="不要靠喝酒入睡")  # 主题不同、要点一样
-    fake_llm.replies = [reply(card, same_meaning)]
+    fake_llm.replies = [reply(card, same_meaning), ok(card, same_meaning)]
     r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
     assert r.added == 1 and r.dropped_dup == 1
 
@@ -168,3 +175,16 @@ def test_pending_cards_not_used_until_approved(client, tokens, fake_llm, session
     client.post(f"/api/knowledge/{pending[0]['id']}/review", json={"action": "approve"}, headers=h(tokens["reviewer"]))
 
     assert "中风险知识" in generate_prompt()  # 审核通过后参与生成（通用库 common 被检索）
+
+
+def test_verify_trims_and_drops_unsupported(session, fake_llm):
+    cards = [
+        {"topic": "规律作息", "points": "每天固定时间上床起床，有助于稳定节律，体现了中医起居有常的理念。", "risk_level": "low"},
+        {"topic": "编造的知识", "points": "每天喝三杯绿茶可以让人睡得更沉，这是原文完全没有提到的说法。", "risk_level": "low"},
+    ]
+    verdict = json.dumps([{"keep": True, "points": "每天固定时间上床起床，有助于让身体的节律更稳定，周末也别差太多。"},
+                          {"keep": False, "points": ""}], ensure_ascii=False)
+    fake_llm.replies = [reply(*cards), verdict]
+    r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda u: ARTICLE, dry_run=True)
+    assert r.trimmed == 1 and r.dropped_unsupported == 1
+    assert [c.topic for c in r.cards] == ["规律作息"] and "中医" not in r.cards[0].points

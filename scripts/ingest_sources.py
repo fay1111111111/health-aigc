@@ -61,8 +61,8 @@ def main() -> None:
             if r.status == "done":
                 verb = "可直接入库" if args.dry_run else "入库"
                 print(f"{label}：{r.chunks} 段，提取 {r.extracted} 张，{verb} {r.added} 张，待审 {r.pending} 张，"
-                      f"去重 {r.dropped_dup}，照搬改写 {r.rewritten}，照搬丢弃 {r.dropped_copy}"
-                      f"（{time.time() - t0:.0f} 秒）", flush=True)
+                      f"核对删改 {r.trimmed}，核对丢弃 {r.dropped_unsupported}，去重 {r.dropped_dup}，"
+                      f"照搬改写 {r.rewritten}，照搬丢弃 {r.dropped_copy}（{time.time() - t0:.0f} 秒）", flush=True)
                 for c in r.cards:
                     print(f"    · [{c.risk_level}/{c.domain}] {c.topic}：{c.points}", flush=True)
                 for note in r.notes:
