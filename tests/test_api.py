@@ -58,6 +58,19 @@ def test_b2b_content_has_no_disclaimer(client, tokens, fake_llm):
     assert "不能替代医疗诊治" not in r.json()["output"]
 
 
+def test_high_risk_cards_not_used_for_marketing(client, tokens, fake_llm):
+    client.post("/api/knowledge", headers=h(tokens["admin"]), json=[
+        {"topic": "低风险卡", "points": "睡前放下手机", "risk_level": "low"},
+        {"topic": "高风险卡", "points": "褪黑素的使用须咨询医生", "risk_level": "high"}])
+    client.post("/api/generate", headers=h(tokens["operator"]), json={
+        "channel": "xiaohongshu", "audience": "c_local", "content_type": "seeding"})
+    prompt = fake_llm.calls[0][1]["content"]
+    assert "低风险卡" in prompt and "高风险卡" not in prompt
+    # 知识库查询仍能查到高风险卡
+    topics = [c["topic"] for c in client.get("/api/knowledge", headers=h(tokens["reviewer"])).json()]
+    assert "高风险卡" in topics
+
+
 def test_blocked_draft_is_rewritten(client, tokens, fake_llm):
     fake_llm.replies = ["我们的手法疗效显著，根治失眠。", "下班来放松一下，睡个好觉。"]
     r = client.post("/api/generate", headers=h(tokens["operator"]), json={

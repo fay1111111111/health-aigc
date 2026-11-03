@@ -32,6 +32,9 @@ content_types:
 
 channels: [xiaohongshu, dianping, douyin_script, offline_print, wechat_moments]
 
+# 营销文案只参考低、中风险的知识卡片；高风险卡片（疾病、药物、孕婴等）只用于查询
+generation_max_risk: mid
+
 compliance:
   extra_block:
     - 治疗失眠

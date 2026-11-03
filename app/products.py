@@ -36,6 +36,9 @@ class Product(BaseModel):
     channels: list[str]
     compliance: ProductCompliance = ProductCompliance()
     ai_label: str = "（本内容由 AI 辅助生成，已经人工审核）"
+    # 营销内容生成时最多参考到哪个风险等级的知识卡片（low / mid / high）。
+    # 高风险卡片（疾病、药物、孕婴等）仍保留在知识库里，供查询和以后的对话产品使用。
+    generation_max_risk: str = "mid"
 
     def audience(self, audience_id: str) -> Option:
         return _pick(self.audiences, audience_id, "受众")

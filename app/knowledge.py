@@ -43,9 +43,15 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (na * nb) if na and nb else 0.0
 
 
-def search(session: Session, product: str, query: str, llm: LLM, k: int = 5) -> list[KnowledgeCard]:
+RISK_ORDER = ["low", "mid", "high"]
+
+
+def search(session: Session, product: str, query: str, llm: LLM, k: int = 5,
+           max_risk: str = "high") -> list[KnowledgeCard]:
+    allowed = RISK_ORDER[:RISK_ORDER.index(max_risk) + 1]
     base = select(KnowledgeCard).where(
-        KnowledgeCard.product == product, KnowledgeCard.active.is_(True), KnowledgeCard.embedding.is_not(None))
+        KnowledgeCard.product == product, KnowledgeCard.active.is_(True), KnowledgeCard.embedding.is_not(None),
+        KnowledgeCard.risk_level.in_(allowed))
     qvec = llm.embed([query])[0]
 
     if session.get_bind().dialect.name == "postgresql":

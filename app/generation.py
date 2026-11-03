@@ -84,7 +84,8 @@ def generate(session: Session, llm: LLM, product: Product, user_id: int, channel
     channel = load_channels()[channel_id]
 
     query = " ".join([product.content_type(content_type_id).name, product.audience(audience_id).name, brief])
-    cards = knowledge.search(session, product.id, query, llm, k=settings.retrieval_top_k)
+    cards = knowledge.search(session, product.id, query, llm, k=settings.retrieval_top_k,
+                             max_risk=product.generation_max_risk)
     references = [c.points for c in cards]
 
     messages = build_messages(product, channel, audience_id, content_type_id, brief, cards, load_examples(product.id))
