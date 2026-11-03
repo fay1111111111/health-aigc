@@ -3,6 +3,7 @@
 目标：用新底座替换服务器上旧的中医药平台 `/opt/tcm-aigc`。全程用 Docker，不影响服务器上的其他项目。
 
 > 当前服务器只有 Docker Compose v1（`docker-compose`，带连字符）。下文的 `docker compose` 在这台服务器上都写成 `docker-compose`。
+> v1（1.29.2）配新版 Docker 有个已知问题：**重建**已有容器时报 `KeyError: 'ContainerConfig'`。所以更新时先删掉 api 容器再新建（见文末「更新代码」），不要直接 `up -d --build`。长期可以考虑安装 Docker Compose v2（`docker-compose-plugin`）。
 > `.env` 里必须有 `COMPOSE_PROJECT_NAME=health-aigc`，否则在 `/opt/tcm-aigc` 目录下项目名会变成 `tcm-aigc`，和旧项目的数据卷撞名。
 
 ## 第 1 步：盘点并备份旧项目（替换前必须做）
@@ -79,7 +80,8 @@ curl -X POST http://127.0.0.1:${API_PORT:-8100}/api/generate \
 
 | 操作 | 命令 |
 | --- | --- |
-| 更新代码 | `git pull && docker compose up -d --build` |
+| 更新代码（Compose v1） | `git pull && docker-compose -p health-aigc build api && docker-compose -p health-aigc rm -sf api && docker-compose -p health-aigc up -d --no-deps api` |
+| 更新代码（Compose v2） | `git pull && docker compose up -d --build` |
 | 查看日志 | `docker compose logs -f api` |
 | 重启 | `docker compose restart api` |
 | 备份数据库 | `docker compose exec -T db pg_dump -U aigc aigc > backup-$(date +%Y%m%d).sql` |
