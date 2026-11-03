@@ -1,0 +1,59 @@
+from sqlalchemy import JSON, create_engine, text
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.types import TypeDecorator
+
+from .config import get_settings
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Embedding(TypeDecorator):
+    """PostgreSQL 上用 pgvector 列；其他数据库（测试用的 SQLite）存成 JSON 数组。"""
+
+    impl = JSON
+    cache_ok = True
+
+    def __init__(self, dim: int):
+        super().__init__()
+        self.dim = dim
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            from pgvector.sqlalchemy import Vector
+
+            return dialect.type_descriptor(Vector(self.dim))
+        return dialect.type_descriptor(JSON())
+
+    def process_result_value(self, value, dialect):
+        return None if value is None else [float(x) for x in value]
+
+
+def make_engine(url: str):
+    if url.startswith("sqlite"):
+        return create_engine(url, connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    return create_engine(url, pool_pre_ping=True)
+
+
+engine = make_engine(get_settings().database_url)
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def init_db(bind=None) -> None:
+    from . import models  # noqa: F401  注册所有表
+
+    bind = bind or engine
+    if bind.dialect.name == "postgresql":
+        with bind.begin() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    Base.metadata.create_all(bind)
+
+
+def get_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

@@ -1,0 +1,50 @@
+id: sleep
+name: 助眠养生
+description: >-
+  线下门店提供的助眠养生手法服务。内容用于门店引流、招募加盟商和加盟商培训。
+  属于养生保健服务，不是医疗服务。
+brand_voice: 温和、专业、有生活气息；像懂行的朋友在分享，不夸大，不制造焦虑。
+
+audiences:
+  - id: c_local
+    name: 门店周边有睡眠困扰的人（C端）
+    description: 工作压力大、作息不规律、想找个地方放松一下的普通人
+  - id: b_franchise
+    name: 加盟意向者（B端）
+    description: 美容院、养生馆、按摩店店主，以及想在养生行业创业的人
+  - id: trainee
+    name: 已签约加盟商和技师
+    description: 需要掌握服务流程、话术和门店运营方法的人
+
+content_types:
+  - id: seeding
+    name: 种草笔记
+  - id: group_buy
+    name: 团购详情
+  - id: store_event
+    name: 门店活动文案
+  - id: poster
+    name: 海报/传单文案
+  - id: franchise
+    name: 招商文案
+  - id: training
+    name: 培训话术
+
+channels: [xiaohongshu, dianping, douyin_script, offline_print, wechat_moments]
+
+compliance:
+  extra_block:
+    - 治疗失眠
+    - 根治失眠
+    - 治愈失眠
+    - 告别安眠药
+    - 替代安眠药
+    - 不用吃药
+    - 停药
+  extra_warn:
+    - 失眠症
+    - 神经衰弱
+    - 焦虑症
+    - 抑郁
+  disclaimer: 本服务为养生保健服务，不能替代医疗诊治；长期睡眠困扰请及时就医。
+  disclaimer_audiences: [c_local]
