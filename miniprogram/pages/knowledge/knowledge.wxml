@@ -1,0 +1,25 @@
+<view class="container">
+  <view class="empty" wx:if="{{denied}}">知识库仅审核人员和管理员可查看</view>
+
+  <block wx:else>
+    <view class="search">
+      <input class="input" value="{{q}}" bindinput="onInput" bindconfirm="search" confirm-type="search" placeholder="按意思搜索，例如：睡前放松" />
+      <view class="search-btn" bindtap="search">搜索</view>
+    </view>
+    <view class="muted hint" wx:if="{{q}}">按相关度排序 · <text class="link" bindtap="clear">显示全部</text></view>
+    <view class="muted hint" wx:else>共 {{items.length}} 张卡片 · 新增和下架请联系管理员</view>
+
+    <view class="card error" wx:if="{{error}}">{{error}}</view>
+
+    <view wx:for="{{items}}" wx:key="id" class="card">
+      <view class="row">
+        <view class="topic">{{item.topic}}</view>
+        <text class="tag {{item.risk_level === 'high' ? 'tag-rejected' : (item.risk_level === 'mid' ? 'tag-pending' : 'tag-approved')}}">{{item.riskText}}</text>
+      </view>
+      <view class="points">{{item.points}}</view>
+      <view class="muted" wx:if="{{item.source}}">出处：{{item.source}}</view>
+    </view>
+
+    <view class="empty" wx:if="{{!loading && !error && items.length === 0}}">还没有知识卡片</view>
+  </block>
+</view>

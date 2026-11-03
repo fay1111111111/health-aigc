@@ -1,0 +1,53 @@
+<view class="container">
+  <view class="top" wx:if="{{user}}">
+    <view>
+      <view class="title">{{productName}}</view>
+      <view class="muted">{{user.name}} · {{roleText}}</view>
+    </view>
+    <view class="logout" bindtap="logout">退出</view>
+  </view>
+
+  <view class="card error" wx:if="{{loadError}}">
+    <view>{{loadError}}</view>
+    <button class="btn-plain small" bindtap="retry">重试</button>
+  </view>
+
+  <view class="card">
+    <picker range="{{channels}}" range-key="name" value="{{channelIdx}}" bindchange="onChannel">
+      <view class="field">
+        <text>发布渠道</text>
+        <view>
+          <text class="field-value {{channelIdx < 0 ? 'placeholder' : ''}}">{{channelIdx < 0 ? '请选择' : channels[channelIdx].name}}</text>
+          <text class="arrow">›</text>
+        </view>
+      </view>
+    </picker>
+    <picker range="{{audiences}}" range-key="name" value="{{audienceIdx}}" bindchange="onAudience">
+      <view class="field">
+        <text>目标受众</text>
+        <view>
+          <text class="field-value {{audienceIdx < 0 ? 'placeholder' : ''}}">{{audienceIdx < 0 ? '请选择' : audiences[audienceIdx].name}}</text>
+          <text class="arrow">›</text>
+        </view>
+      </view>
+    </picker>
+    <picker range="{{types}}" range-key="name" value="{{typeIdx}}" bindchange="onType">
+      <view class="field">
+        <text>内容类型</text>
+        <view>
+          <text class="field-value {{typeIdx < 0 ? 'placeholder' : ''}}">{{typeIdx < 0 ? '请选择' : types[typeIdx].name}}</text>
+          <text class="arrow">›</text>
+        </view>
+      </view>
+    </picker>
+  </view>
+
+  <view class="card">
+    <view class="label">补充要点（选填）</view>
+    <textarea class="textarea" value="{{brief}}" bindinput="onBrief" maxlength="2000"
+      placeholder="例如：主推 60 分钟肩颈助眠套餐，新客价 99 元，地址天河路 xx 号。价格、地址等具体信息只会使用这里写的。" />
+  </view>
+
+  <button class="btn" loading="{{loading}}" disabled="{{loading}}" bindtap="generate">生成文案</button>
+  <view class="muted tip">生成后会自动做合规检测，审核通过后才能导出。</view>
+</view>

@@ -1,0 +1,17 @@
+<view class="container">
+  <view class="hero">
+    <view class="hero-title">内容工作台</view>
+    <view class="hero-sub">大健康营销内容生成 · 内部使用</view>
+  </view>
+
+  <view class="card">
+    <view class="label">服务器地址</view>
+    <input class="input" value="{{apiBase}}" bindinput="onBase" placeholder="例如 http://服务器IP:8100" />
+
+    <view class="label gap">登录令牌</view>
+    <input class="input" value="{{token}}" bindinput="onToken" password placeholder="管理员发给你的令牌" />
+  </view>
+
+  <button class="btn" loading="{{loading}}" disabled="{{loading}}" bindtap="login">登录</button>
+  <view class="muted tip">令牌由管理员在后台创建。忘记令牌请找管理员重新创建。</view>
+</view>

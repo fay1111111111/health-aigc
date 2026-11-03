@@ -1,0 +1,55 @@
+<view class="container">
+  <view class="card error" wx:if="{{error}}">{{error}}</view>
+
+  <block wx:if="{{g}}">
+    <view class="card">
+      <view class="row">
+        <text class="tag {{g.statusCls}}">{{g.statusText}}</text>
+        <text class="muted">{{g.timeText}}</text>
+      </view>
+      <view class="meta">{{g.channelName}} · {{g.typeName}}</view>
+      <view class="muted">受众：{{g.audienceName}}</view>
+      <view class="muted" wx:if="{{g.brief}}">补充要点：{{g.brief}}</view>
+      <view class="note" wx:if="{{g.status === 'rejected' && g.review_note}}">审核意见：{{g.review_note}}</view>
+    </view>
+
+    <!-- 合规检测结果 -->
+    <view class="card check {{g.passed ? 'check-ok' : 'check-bad'}}">
+      <view class="check-title">{{g.passed ? '合规检测通过' : '含禁用表述，修改后才能通过审核'}}</view>
+      <view wx:for="{{g.blockIssues}}" wx:key="index" class="issue issue-block">✕ {{item.message}}</view>
+      <view wx:for="{{g.warnIssues}}" wx:key="index" class="issue issue-warn">! {{item.message}}</view>
+      <view class="muted" wx:if="{{g.rewrites > 0}}">系统已自动改写 {{g.rewrites}} 次</view>
+    </view>
+
+    <!-- 正文 -->
+    <view class="card">
+      <view class="row">
+        <view class="label">正文{{g.edited_output ? '（已人工修改）' : ''}}</view>
+        <view class="link" wx:if="{{!editing && g.status !== 'approved'}}" bindtap="startEdit">修改</view>
+      </view>
+      <block wx:if="{{editing}}">
+        <textarea class="textarea editor" value="{{draft}}" bindinput="onDraft" maxlength="-1" auto-height />
+        <view class="row gap">
+          <button class="btn-plain half" bindtap="cancelEdit">取消</button>
+          <button class="btn half" loading="{{busy}}" disabled="{{busy}}" bindtap="saveEdit">保存并重新检测</button>
+        </view>
+      </block>
+      <text wx:else class="body" user-select>{{g.final_text}}</text>
+    </view>
+
+    <!-- 操作 -->
+    <view wx:if="{{!editing}}">
+      <block wx:if="{{g.status === 'approved'}}">
+        <button class="btn" disabled="{{busy}}" bindtap="copy">复制文案（含 AI 生成标识）</button>
+      </block>
+      <block wx:else>
+        <view class="row" wx:if="{{canReview}}">
+          <button class="btn-danger half" disabled="{{busy}}" bindtap="reject">打回</button>
+          <button class="btn half" disabled="{{busy || !g.passed}}" bindtap="approve">审核通过</button>
+        </view>
+        <view class="muted center" wx:if="{{!canReview}}">已提交，等待审核人员审核</view>
+      </block>
+      <button class="btn-plain gap" disabled="{{busy}}" bindtap="regenerate">按同样条件重新生成</button>
+    </view>
+  </block>
+</view>

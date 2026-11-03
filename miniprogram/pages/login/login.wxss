@@ -1,0 +1,5 @@
+.hero { padding: 80rpx 8rpx 48rpx; }
+.hero-title { font-size: 48rpx; font-weight: 600; color: #2F6B5E; }
+.hero-sub { color: #6B716D; margin-top: 8rpx; }
+.gap { margin-top: 28rpx; }
+.tip { margin-top: 24rpx; text-align: center; }

@@ -1,0 +1,14 @@
+.tabs {
+  display: flex;
+  background: #FFFFFF;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1rpx solid #EEF0EE;
+}
+.tab { flex: 1; text-align: center; padding: 22rpx 0; color: #6B716D; font-size: 28rpx; }
+.tab.on { color: #2F6B5E; font-weight: 600; border-bottom: 4rpx solid #2F6B5E; }
+.row { display: flex; justify-content: space-between; align-items: center; }
+.preview { margin-top: 16rpx; color: #3A403C; font-size: 28rpx; }
+.flag-bad { margin-top: 12rpx; color: #B03A2E; font-size: 24rpx; }
+.error { color: #B03A2E; }

@@ -1,0 +1,9 @@
+.search { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
+.search .input { flex: 1; background: #FFFFFF; }
+.search-btn { color: #2F6B5E; font-weight: 600; padding: 0 8rpx; }
+.hint { margin: 4rpx 4rpx 20rpx; }
+.link { color: #2F6B5E; }
+.row { display: flex; justify-content: space-between; align-items: center; }
+.topic { font-weight: 600; font-size: 32rpx; }
+.points { margin: 12rpx 0; color: #3A403C; font-size: 28rpx; }
+.error { color: #B03A2E; }

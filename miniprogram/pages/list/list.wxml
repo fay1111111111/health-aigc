@@ -1,0 +1,22 @@
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{index === active ? 'on' : ''}}" data-i="{{index}}" bindtap="switchTab">{{item.text}}</view>
+</view>
+
+<view class="container">
+  <view class="card error" wx:if="{{error}}">{{error}}</view>
+
+  <view wx:for="{{items}}" wx:key="id" class="card item" data-id="{{item.id}}" bindtap="open">
+    <view class="row">
+      <view>
+        <text class="tag {{item.statusCls}}">{{item.statusText}}</text>
+        <text class="tag tag-neutral">{{item.channelName}}</text>
+        <text class="tag tag-neutral">{{item.typeName}}</text>
+      </view>
+      <text class="muted">{{item.timeText}}</text>
+    </view>
+    <view class="preview">{{item.preview}}</view>
+    <view class="flag-bad" wx:if="{{!item.passed}}">含禁用表述，需修改</view>
+  </view>
+
+  <view class="empty" wx:if="{{!loading && !error && items.length === 0}}">还没有稿件，去「生成」页写一篇吧</view>
+</view>

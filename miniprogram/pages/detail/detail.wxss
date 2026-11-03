@@ -1,0 +1,21 @@
+.row { display: flex; justify-content: space-between; align-items: center; }
+.meta { font-size: 32rpx; font-weight: 600; margin: 16rpx 0 6rpx; }
+.note { margin-top: 12rpx; color: #B03A2E; font-size: 26rpx; }
+.error { color: #B03A2E; }
+
+.check-ok { border-left: 8rpx solid #2F6B5E; }
+.check-bad { border-left: 8rpx solid #C0392B; }
+.check-title { font-weight: 600; margin-bottom: 8rpx; }
+.check-ok .check-title { color: #2F6B5E; }
+.check-bad .check-title { color: #B03A2E; }
+.issue { font-size: 26rpx; margin-top: 6rpx; }
+.issue-block { color: #B03A2E; }
+.issue-warn { color: #A66A00; }
+
+.link { color: #2F6B5E; font-size: 28rpx; padding: 4rpx 0 4rpx 20rpx; }
+.body { white-space: pre-wrap; font-size: 30rpx; line-height: 1.8; display: block; }
+.editor { min-height: 400rpx; line-height: 1.8; }
+
+.half { width: 48% !important; margin: 0 !important; }
+.gap { margin-top: 20rpx; }
+.center { text-align: center; padding: 12rpx 0; }

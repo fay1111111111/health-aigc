@@ -18,6 +18,7 @@ compliance/rules.yaml 通用合规词表
 products/<产品线>/    每条产品线一套：product.yaml 配置、knowledge/ 知识卡片、examples.yaml 风格样例
 scripts/             创建账号、导入知识库
 tests/               自动化测试
+miniprogram/         内部小程序（用微信开发者工具打开，说明见 miniprogram/README.md）
 ```
 
 ## 新增一条产品线

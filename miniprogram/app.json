@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/generate/generate",
+    "pages/list/list",
+    "pages/detail/detail",
+    "pages/knowledge/knowledge"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#2F6B5E",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "内容工作台",
+    "backgroundColor": "#F5F6F4"
+  },
+  "tabBar": {
+    "color": "#8A8F8C",
+    "selectedColor": "#2F6B5E",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/generate/generate", "text": "生成" },
+      { "pagePath": "pages/list/list", "text": "稿件" },
+      { "pagePath": "pages/knowledge/knowledge", "text": "知识库" }
+    ]
+  },
+  "networkTimeout": {
+    "request": 120000
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
