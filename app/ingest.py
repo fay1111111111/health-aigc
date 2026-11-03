@@ -55,8 +55,10 @@ class IngestResult:
     pending: int = 0
     dropped_copy: int = 0
     dropped_dup: int = 0
+    rewritten: int = 0
     error: str = ""
     notes: list[str] = field(default_factory=list)
+    cards: list = field(default_factory=list)  # 试跑模式下的提取结果
 
 
 # ---------- 抓取与提取正文 ----------
@@ -66,22 +68,37 @@ def fetch_text(url: str, timeout: float = 30) -> str:
         resp = httpx.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout, follow_redirects=True)
     except httpx.HTTPError as e:
         raise FetchError(f"无法访问：{e}") from e
+    if resp.status_code in (403, 412, 418, 429, 503):
+        raise FetchError(f"HTTP {resp.status_code}（网站拒绝自动访问，请换用其他网站转载的同一份资料）")
     if resp.status_code >= 400:
         raise FetchError(f"HTTP {resp.status_code}")
     ctype = resp.headers.get("content-type", "").lower()
     if "pdf" in ctype or url.lower().endswith(".pdf"):
-        return pdf_text(resp.content)
-    if ctype.startswith("text/plain") or url.lower().endswith(".txt"):
-        return resp.text
-    return html_text(resp.content)
+        text = pdf_text(resp.content)
+    elif ctype.startswith("text/plain") or url.lower().endswith(".txt"):
+        text = resp.text
+    else:
+        text = html_text(resp.content)
+    if len(_NON_SPACE.sub("", text)) < MIN_TEXT_CHARS:
+        raise FetchError(f"正文太短（{len(text.strip())} 字），可能只抓到页面外壳或正文在附件里")
+    return text
+
+
+MIN_TEXT_CHARS = 300
+_NON_SPACE = re.compile(r"\s+")
 
 
 def html_text(content: bytes) -> str:
     import trafilatura
 
-    text = trafilatura.extract(content, include_comments=False, include_tables=True, favor_recall=True)
-    if not text:
-        raise FetchError("没有提取到正文（可能是动态页面或需要登录）")
+    text = trafilatura.extract(content, include_comments=False, include_tables=True, favor_recall=True) or ""
+    if len(text) < MIN_TEXT_CHARS:
+        # 正文识别失败时退回整页文字；导航、页脚等杂项由后面的模型提取环节过滤
+        full = trafilatura.html2txt(content) or ""
+        if len(full) > len(text):
+            text = full
+    if not text.strip():
+        raise FetchError("没有提取到文字（可能是动态页面或需要登录）")
     return text
 
 
@@ -123,15 +140,17 @@ def chunk_text(text: str, size: int = 1800) -> list[str]:
 EXTRACT_SYSTEM = f"""你是健康科普编辑，负责把资料整理成「知识卡片」，供营销内容生成时作为事实依据。
 
 规则：
-1. 只提取对普通人有用、表述明确的健康知识；广告、新闻动态、会议流程、目录、人名职务等不要提取。
+1. 只提取对普通人日常保健和生活方式有用、表述明确的知识（作息睡眠、饮食营养、运动、情绪压力、中医养生、体重、季节保健、特定人群的日常注意事项等）。
+   不要提取：献血、急救操作、传染病防控、疫苗、医保和就医流程、法律法规、医疗机构介绍、广告、新闻动态、会议流程、目录、人名职务。
 2. 每张卡片讲一个知识点：topic 是 15 字以内的主题；points 是 40 到 120 字的要点。
 3. points 必须用你自己的话重新表达，不能照抄原文句子（古籍原句可以在引号里引用不超过 10 个字）。
 4. 不要提取具体药物名称、用药剂量、处方和方剂组成。
 5. 保留原文里的关键数字（如时长、温度、年龄段），不要编造原文没有的数字和结论。
 6. risk_level：
    - low：一般生活方式和常识（作息、环境、饮食习惯、运动习惯等）
-   - mid：涉及身体功能和效果的说法、研究结论、特定人群的一般建议
+   - mid：涉及身体功能和效果的说法、研究结论、生理指标和医学数值（血压、血糖、心率、体温等）、特定人群的一般建议
    - high：疾病诊断与治疗、药物、孕产妇和婴幼儿、穴位方药、慢病管理、需要医生指导的内容
+   拿不准时选更高的一级。
 7. domain 从这些里选一个：{"、".join(DOMAINS)}
 8. 输出 JSON 数组，不要任何解释：[{{"topic": "...", "points": "...", "risk_level": "low", "domain": "...", "tags": ["..."]}}]
    这段资料没有可提取的内容就输出 []。"""
@@ -157,17 +176,46 @@ def extract_cards(llm: LLM, chunk: str, src: SourceIn) -> list[CardIn]:
     for d in parse_cards(raw):
         domain = d.get("domain") if d.get("domain") in DOMAINS else (src.domain or "")
         try:
-            cards.append(CardIn(
+            cards.append(enforce_risk(CardIn(
                 topic=str(d.get("topic", "")).strip()[:200],
                 points=str(d.get("points", "")).strip(),
                 risk_level=d.get("risk_level") if d.get("risk_level") in knowledge.RISK_ORDER else "mid",
                 domain=domain,
                 tags=[str(t) for t in (d.get("tags") or [])][:6],
                 source=source_label(src),
-            ))
+            )))
         except ValidationError:
             continue
     return cards
+
+
+# 含这些生理/医学数值或词语的卡片，至少按中风险处理（进待审），不完全依赖模型判断
+_MEDICAL_MARKERS = re.compile(
+    r"mmHg|mmol|mg/dL|毫摩尔|毫米汞柱|血压|血糖|血脂|胆固醇|心率|脉搏|体温|次/分|毫克|微克|"
+    r"疾病|患者|病人|症状|诊断|治疗|药物|用药|服用|手术|医院|就医|孕妇|孕期|婴儿|婴幼儿|新生儿|穴",
+    re.IGNORECASE)
+
+
+def enforce_risk(card: CardIn) -> CardIn:
+    if card.risk_level == "low" and _MEDICAL_MARKERS.search(f"{card.topic}{card.points}"):
+        card.risk_level = "mid"
+    return card
+
+
+REWRITE_SYSTEM = """下面这些知识卡片的 points 和原资料的句子重合太多。请逐条用你自己的话重新表达，意思和关键数字不变，40 到 120 字。
+输出 JSON 数组，顺序与输入一致，每项只包含 topic 和 points：[{"topic": "...", "points": "..."}]"""
+
+
+def rewrite_copied(llm: LLM, cards: list[CardIn]) -> list[CardIn]:
+    payload = json.dumps([{"topic": c.topic, "points": c.points} for c in cards], ensure_ascii=False)
+    raw = llm.chat([{"role": "system", "content": REWRITE_SYSTEM}, {"role": "user", "content": payload}],
+                   temperature=0.5).text
+    out = []
+    for c, d in zip(cards, parse_cards(raw)):
+        points = str(d.get("points", "")).strip()
+        if points:
+            out.append(c.model_copy(update={"points": points}))
+    return out
 
 
 def source_label(src: SourceIn) -> str:
@@ -188,11 +236,55 @@ def upsert_source(session: Session, src: SourceIn) -> Source:
     return row
 
 
-def ingest_source(session: Session, llm: LLM, src: SourceIn, fetcher=fetch_text, force: bool = False) -> IngestResult:
+def _split_copied(cards: list[CardIn], chunk: str, n: int) -> tuple[list[CardIn], list[CardIn]]:
+    clean, copied = [], []
+    for c in cards:
+        (copied if compliance._copied_spans(c.points, chunk, n) else clean).append(c)
+    return clean, copied
+
+
+def process_chunk(session: Session, llm: LLM, chunk: str, src: SourceIn, result: IngestResult,
+                  seen_vecs: list[list[float]]) -> tuple[list[CardIn], list[list[float]]]:
+    """提取一段资料的卡片，处理照搬和重复，返回可以入库的卡片和向量。"""
     settings = get_settings()
-    row = upsert_source(session, src)
-    if row.status == "done" and not force:
-        return IngestResult(src.url, "skipped", notes=["已处理过"])
+    cards = extract_cards(llm, chunk, src)
+    result.extracted += len(cards)
+
+    # 照搬原文的卡片改写一次，仍然照搬的丢弃
+    clean, copied = _split_copied(cards, chunk, settings.copy_ngram)
+    if copied:
+        fixed = [enforce_risk(c) for c in rewrite_copied(llm, copied)]
+        fixed_clean, still_copied = _split_copied(fixed, chunk, settings.copy_ngram)
+        result.rewritten += len(fixed_clean)
+        result.dropped_copy += len(copied) - len(fixed_clean)
+        clean += fixed_clean
+    if not clean:
+        return [], []
+
+    # 和库里已有卡片、本条资料前面已提取的卡片意思重复的丢弃
+    vectors = llm.embed([knowledge.card_text(c.topic, c.points) for c in clean])
+    keep_cards, keep_vecs = [], []
+    for c, v in zip(clean, vectors):
+        _, sim = knowledge.most_similar(session, [src.pool], v, llm)
+        dup = sim >= settings.dedup_similarity or any(
+            knowledge.cosine(v, kv) >= settings.dedup_similarity for kv in seen_vecs + keep_vecs)
+        if dup:
+            result.dropped_dup += 1
+        else:
+            keep_cards.append(c)
+            keep_vecs.append(v)
+    return keep_cards, keep_vecs
+
+
+def ingest_source(session: Session, llm: LLM, src: SourceIn, fetcher=fetch_text, force: bool = False,
+                  dry_run: bool = False) -> IngestResult:
+    """dry_run=True 时只提取、不入库、不改变资料状态，提取结果放在 result.cards 里供查看。"""
+    settings = get_settings()
+    row = None
+    if not dry_run:
+        row = upsert_source(session, src)
+        if row.status == "done" and not force:
+            return IngestResult(src.url, "skipped", notes=["已处理过"])
 
     result = IngestResult(src.url, "done")
     try:
@@ -202,49 +294,37 @@ def ingest_source(session: Session, llm: LLM, src: SourceIn, fetcher=fetch_text,
         if not chunks:
             raise FetchError("正文太短，没有可用内容")
 
+        seen_vecs: list[list[float]] = []
         for chunk in chunks:
-            cards = extract_cards(llm, chunk, src)
-            result.extracted += len(cards)
-            # 照搬原文的卡片丢弃
-            clean = []
-            for c in cards:
-                if compliance._copied_spans(c.points, chunk, settings.copy_ngram):
-                    result.dropped_copy += 1
-                else:
-                    clean.append(c)
-            if not clean:
+            keep_cards, keep_vecs = process_chunk(session, llm, chunk, src, result, seen_vecs)
+            seen_vecs += keep_vecs
+            if dry_run:
+                result.cards += keep_cards
+                result.added += sum(1 for c in keep_cards if c.risk_level == "low")
+                result.pending += sum(1 for c in keep_cards if c.risk_level != "low")
                 continue
-            # 和库里已有卡片（含本次刚入库的）意思重复的丢弃
-            vectors = llm.embed([knowledge.card_text(c.topic, c.points) for c in clean])
-            keep_cards, keep_vecs = [], []
-            for c, v in zip(clean, vectors):
-                _, sim = knowledge.most_similar(session, [src.pool], v, llm)
-                dup_in_batch = any(knowledge.cosine(v, kv) >= settings.dedup_similarity for kv in keep_vecs)
-                if sim >= settings.dedup_similarity or dup_in_batch:
-                    result.dropped_dup += 1
-                else:
-                    keep_cards.append(c)
-                    keep_vecs.append(v)
             rows = knowledge.add_cards(session, src.pool, keep_cards, llm, review_status=None,
                                        origin="auto", source_id=row.id, vectors=keep_vecs)
             result.added += sum(1 for r in rows if r.review_status == "approved")
             result.pending += sum(1 for r in rows if r.review_status == "pending")
             result.dropped_dup += len(keep_cards) - len(rows)  # 同名主题
-        row.status, row.error = "done", ""
+        if row is not None:
+            row.status, row.error = "done", ""
     except FetchError as e:
         result.status, result.error = "failed", str(e)
-        row.status, row.error = "failed", str(e)
     except Exception as e:  # noqa: BLE001  单条资料失败不影响其他资料
         log.exception("处理资料失败：%s", src.url)
         result.status, result.error = "failed", f"{type(e).__name__}: {e}"
-        row.status, row.error = "failed", result.error
 
-    from sqlalchemy import func
+    if row is not None:
+        from sqlalchemy import func
 
-    from .models import KnowledgeCard
+        from .models import KnowledgeCard
 
-    row.card_count = session.scalar(select(func.count()).select_from(KnowledgeCard).where(
-        KnowledgeCard.source_id == row.id, KnowledgeCard.active.is_(True))) or 0
-    row.fetched_at = datetime.now(timezone.utc)
-    session.commit()
+        if result.status == "failed":
+            row.status, row.error = "failed", result.error
+        row.card_count = session.scalar(select(func.count()).select_from(KnowledgeCard).where(
+            KnowledgeCard.source_id == row.id, KnowledgeCard.active.is_(True))) or 0
+        row.fetched_at = datetime.now(timezone.utc)
+        session.commit()
     return result

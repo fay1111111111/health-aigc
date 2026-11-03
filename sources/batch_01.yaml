@@ -1,10 +1,18 @@
-# 第一批：大健康公开资料（政府、学会、国际机构公开科普与指南，公有领域古籍）
+# 第一批：大健康公开资料
+# 国家卫健委官网（nhc.gov.cn）拒绝自动访问，相关资料改用各地政府网站转载的同一份文件。
+#（政府、学会、国际机构公开科普与指南，公有领域古籍）
 # 全部进入大健康通用库 common，所有产品线共享。
 
 # ---------- 睡眠 ----------
-- url: https://www.nhc.gov.cn/guihuaxxs/c100133/202503/70d5836afe804a858b899ee951a24a13.shtml
-  title: 睡眠健康核心信息及释义
-  publisher: 全国爱卫办（国家卫生健康委网站）
+- url: https://cdcp.gd.gov.cn/zwgk/tzgg/content/post_4683550.html
+  title: 全国爱卫办发布睡眠健康核心信息及释义
+  publisher: 全国爱卫办（广东省疾病预防控制中心转载）
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 睡眠
+- url: https://ws.zibo.gov.cn/art/2025/3/24/art_812_2901114.html
+  title: 睡眠健康核心信息（含释义）
+  publisher: 全国爱卫办（淄博市卫生健康委员会转载）
   source_type: gov
   license_note: 政府公开科普
   domain: 睡眠
@@ -104,11 +112,11 @@
   source_type: gov
   license_note: 政府公开文件
   domain: 体重管理
-- url: https://www.nhc.gov.cn/ylyjs/zcwj/202412/75cb79c171c94def9e768193e65484f7/files/1736390749000_59785.pdf
-  title: 体重管理指导原则（2024年版）
-  publisher: 国家卫生健康委员会
+- url: https://health.quanzhou.gov.cn/xxgk/ztlm/jkqz/202505/t20250508_3167302.htm
+  title: 科学控体重 健康长相伴——《体重管理指导原则（2024版）》
+  publisher: 泉州市卫生健康委员会
   source_type: gov
-  license_note: 政府公开文件
+  license_note: 政府公开科普
   domain: 体重管理
 
 # ---------- 身体活动 ----------
@@ -137,12 +145,6 @@
   publisher: 辽宁省卫生健康委员会
   source_type: gov
   license_note: 政府公开科普
-  domain: 心理健康
-- url: https://www.nhc.gov.cn/wjw/xlws/200707/97d9ae0571a444179e46cfa2c5262c79.shtml
-  title: 精神卫生宣传教育核心信息和知识要点
-  publisher: 国家卫生健康委员会
-  source_type: gov
-  license_note: 政府公开文件
   domain: 心理健康
 - url: https://www.zlq.gov.cn/zlq/ztzl/jkzlqxd/281c9b1906a94e21a8cd16e5eb5acbcc/index.shtml
   title: 健康中国行动——心理健康促进行动
@@ -212,9 +214,9 @@
   domain: 中医养生
 
 # ---------- 综合 ----------
-- url: https://www.nhc.gov.cn/guihuaxxs/c100133/201907/2a6ed52f1c264203b5351bdbbadd2da8.shtml
+- url: https://wjw.hunan.gov.cn/ztzl/knowledge/tzggzcfg/202003/t20200303_11359594.html
   title: 健康中国行动（2019—2030年）
-  publisher: 健康中国行动推进委员会（国家卫生健康委网站）
+  publisher: 健康中国行动推进委员会（湖南省卫生健康委员会转载）
   source_type: gov
   license_note: 政府公开文件
   domain: 生活方式

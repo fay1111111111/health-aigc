@@ -55,11 +55,61 @@ def test_ingest_routes_by_risk(session, fake_llm):
     assert src.status == "done" and src.card_count == 2 and src.publisher == "某卫健委"
 
 
-def test_copied_card_is_dropped(session, fake_llm):
-    fake_llm.replies = [reply(
-        {"topic": "照抄", "points": "卧室温度保持适宜、光线偏暗，有助于入睡。睡前避免剧烈运动和大量饮酒。", "risk_level": "low"})]
+COPIED = "卧室温度保持适宜、光线偏暗，有助于入睡。睡前避免剧烈运动和大量饮酒。"
+
+
+def test_copied_card_rewritten_once_then_dropped(session, fake_llm):
+    fake_llm.replies = [reply({"topic": "照抄", "points": COPIED, "risk_level": "low"}),
+                        reply({"topic": "照抄", "points": COPIED})]  # 改写后仍照抄
     r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
-    assert r.dropped_copy == 1 and r.added == 0
+    assert r.dropped_copy == 1 and r.rewritten == 0 and r.added == 0
+
+
+def test_copied_card_rewritten_successfully(session, fake_llm):
+    fake_llm.replies = [reply({"topic": "卧室环境", "points": COPIED, "risk_level": "low"}),
+                        reply({"topic": "卧室环境", "points": "把卧室布置得暗一些、温度合适，更容易睡着；临睡前别做太激烈的运动，也少喝酒。"})]
+    r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
+    assert r.rewritten == 1 and r.added == 1 and r.dropped_copy == 0
+
+
+def test_medical_values_forced_to_review(session, fake_llm):
+    fake_llm.replies = [reply({"topic": "血压正常范围", "points": "成年人安静时收缩压一般在九十到一百三十九毫米汞柱之间，偶尔有小幅波动属于正常现象。",
+                               "risk_level": "low"})]
+    r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE)
+    assert r.added == 0 and r.pending == 1
+    card = session.scalar(select(KnowledgeCard).where(KnowledgeCard.topic == "血压正常范围"))
+    assert card.risk_level == "mid" and card.review_status == "pending"
+
+
+def test_dry_run_writes_nothing(session, fake_llm):
+    fake_llm.replies = [reply({"topic": "午后少喝咖啡", "points": "对咖啡比较敏感的人，下午以后尽量别喝咖啡和浓茶，换成白开水更不容易影响晚上的睡眠。",
+                               "risk_level": "low"})]
+    r = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda url: ARTICLE, dry_run=True)
+    assert r.status == "done" and [c.topic for c in r.cards] == ["午后少喝咖啡"]
+    assert session.scalar(select(KnowledgeCard)) is None
+    assert session.scalar(select(Source)) is None
+
+
+def test_short_page_fails_instead_of_done(monkeypatch):
+    class Resp:
+        status_code = 200
+        headers = {"content-type": "text/html"}
+        content = "<html><body><nav>首页 导航</nav><p>欢迎访问</p></body></html>".encode()
+
+    monkeypatch.setattr(ingest.httpx, "get", lambda *a, **k: Resp())
+    with pytest.raises(ingest.FetchError, match="正文太短"):
+        ingest.fetch_text("https://example.gov.cn/shell")
+
+
+def test_blocked_site_hint(monkeypatch):
+    class Resp:
+        status_code = 412
+        headers = {}
+        content = b""
+
+    monkeypatch.setattr(ingest.httpx, "get", lambda *a, **k: Resp())
+    with pytest.raises(ingest.FetchError, match="转载"):
+        ingest.fetch_text("https://www.nhc.gov.cn/x")
 
 
 def test_duplicate_card_is_dropped(session, fake_llm, monkeypatch):

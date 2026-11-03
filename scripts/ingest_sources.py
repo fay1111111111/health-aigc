@@ -6,6 +6,7 @@
     --limit 5        只处理前 5 条（先试跑看效果）
     --retry-failed   重新处理之前失败的
     --force          已处理过的也重新处理
+    --dry-run        试跑：只提取并显示卡片，不入库、不改变资料状态
 
 已处理过的资料会自动跳过，中途中断后重新运行即可接着做。
 低风险卡片直接可用；中、高风险卡片进入「待审核」，在小程序知识库页审核。
@@ -31,6 +32,7 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--retry-failed", action="store_true")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     items = yaml.safe_load(Path(args.file).read_text(encoding="utf-8")) or []
@@ -47,26 +49,31 @@ def main() -> None:
             prev = session.scalar(select(Source).where(Source.url == src.url))
             force = args.force or (args.retry_failed and prev is not None and prev.status == "failed")
             t0 = time.time()
-            r = ingest_source(session, llm, src, force=force)
+            r = ingest_source(session, llm, src, force=force, dry_run=args.dry_run)
             totals[r.status] = totals.get(r.status, 0) + 1
             totals["added"] += r.added
             totals["pending"] += r.pending
             totals["copy"] += r.dropped_copy
             totals["dup"] += r.dropped_dup
+            totals["rewritten"] = totals.get("rewritten", 0) + r.rewritten
             label = f"[{i}/{len(sources)}] {src.publisher}《{src.title}》"
             if r.status == "done":
-                print(f"{label}：{r.chunks} 段，提取 {r.extracted} 张，入库 {r.added} 张，待审 {r.pending} 张，"
-                      f"去重 {r.dropped_dup}，照搬丢弃 {r.dropped_copy}（{time.time() - t0:.0f} 秒）", flush=True)
+                verb = "可直接入库" if args.dry_run else "入库"
+                print(f"{label}：{r.chunks} 段，提取 {r.extracted} 张，{verb} {r.added} 张，待审 {r.pending} 张，"
+                      f"去重 {r.dropped_dup}，照搬改写 {r.rewritten}，照搬丢弃 {r.dropped_copy}"
+                      f"（{time.time() - t0:.0f} 秒）", flush=True)
+                for c in r.cards:
+                    print(f"    · [{c.risk_level}/{c.domain}] {c.topic}：{c.points}", flush=True)
             elif r.status == "skipped":
                 print(f"{label}：已处理过，跳过", flush=True)
             else:
                 failed.append((src, r.error))
                 print(f"{label}：失败 —— {r.error}", flush=True)
 
-    print("\n===== 汇总 =====")
+    print("\n===== 汇总" + "（试跑，未入库）" * args.dry_run + " =====")
     print(f"成功 {totals['done']} 条，失败 {totals['failed']} 条，跳过 {totals['skipped']} 条")
     print(f"直接入库 {totals['added']} 张，待审核 {totals['pending']} 张，"
-          f"去重丢弃 {totals['dup']} 张，照搬丢弃 {totals['copy']} 张")
+          f"去重丢弃 {totals['dup']} 张，照搬改写 {totals.get('rewritten', 0)} 张，照搬丢弃 {totals['copy']} 张")
     if failed:
         print("\n失败清单：")
         for src, err in failed:
