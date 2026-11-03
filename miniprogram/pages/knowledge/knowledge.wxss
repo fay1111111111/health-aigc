@@ -1,3 +1,14 @@
+.tabs {
+  display: flex;
+  background: #FFFFFF;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1rpx solid #EEF0EE;
+}
+.tab { flex: 1; text-align: center; padding: 22rpx 0; color: #6B716D; font-size: 28rpx; }
+.tab.on { color: #2F6B5E; font-weight: 600; border-bottom: 4rpx solid #2F6B5E; }
+
 .search { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
 .search .input { flex: 1; background: #FFFFFF; }
 .search-btn { color: #2F6B5E; font-weight: 600; padding: 0 8rpx; }
@@ -5,5 +16,8 @@
 .link { color: #2F6B5E; }
 .row { display: flex; justify-content: space-between; align-items: center; }
 .topic { font-weight: 600; font-size: 32rpx; }
+.meta { margin-top: 10rpx; }
 .points { margin: 12rpx 0; color: #3A403C; font-size: 28rpx; }
+.actions { margin-top: 20rpx; }
+.half { width: 48% !important; margin: 0 !important; }
 .error { color: #B03A2E; }

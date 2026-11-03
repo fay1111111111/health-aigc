@@ -39,6 +39,11 @@ class Product(BaseModel):
     # 营销内容生成时最多参考到哪个风险等级的知识卡片（low / mid / high）。
     # 高风险卡片（疾病、药物、孕婴等）仍保留在知识库里，供查询和以后的对话产品使用。
     generation_max_risk: str = "mid"
+    # 生成时检索哪些知识库：默认是产品线自己的库 + 大健康通用库 common
+    knowledge_pools: list[str] = Field(default_factory=list)
+
+    def pools(self) -> list[str]:
+        return self.knowledge_pools or [self.id, "common"]
 
     def audience(self, audience_id: str) -> Option:
         return _pick(self.audiences, audience_id, "受众")

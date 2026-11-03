@@ -22,19 +22,46 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class Source(Base):
+    """资料来源登记：每条自动抓取的资料从哪来、什么性质，备案时用于说明语料来源。"""
+
+    __tablename__ = "sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    url: Mapped[str] = mapped_column(String(1000), unique=True)
+    title: Mapped[str] = mapped_column(String(300), default="")
+    publisher: Mapped[str] = mapped_column(String(200), default="")  # 发布机构
+    source_type: Mapped[str] = mapped_column(String(32), default="")  # gov / association / classic / international / paper
+    license_note: Mapped[str] = mapped_column(String(300), default="")  # 使用依据，如“政府公开科普”“公有领域古籍”
+    domain: Mapped[str] = mapped_column(String(32), default="")  # 领域，如 睡眠、营养
+    pool: Mapped[str] = mapped_column(String(32), default="common")  # 入哪个知识库
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending / done / failed
+    error: Mapped[str] = mapped_column(Text, default="")
+    card_count: Mapped[int] = mapped_column(Integer, default=0)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class KnowledgeCard(Base):
-    """知识卡片：公开资料改写后的要点，生成时作为事实依据检索。"""
+    """知识卡片：公开资料改写后的要点，生成时作为事实依据检索。
+
+    product 字段是知识库名：产品线自己的库（如 sleep）或所有产品线共享的大健康通用库 common。
+    """
 
     __tablename__ = "knowledge_cards"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     product: Mapped[str] = mapped_column(String(32), index=True)
+    domain: Mapped[str] = mapped_column(String(32), default="")
     topic: Mapped[str] = mapped_column(String(200))
     points: Mapped[str] = mapped_column(Text)  # 改写后的要点
     source: Mapped[str] = mapped_column(String(500), default="")  # 出处
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("sources.id"), nullable=True)
     risk_level: Mapped[str] = mapped_column(String(8), default="low")  # low / mid / high
     tags: Mapped[list] = mapped_column(JSON, default=list)
     embedding: Mapped[list | None] = mapped_column(Embedding(get_settings().embedding_dim), nullable=True)
+    origin: Mapped[str] = mapped_column(String(16), default="manual")  # manual 人工整理 / auto 自动提取
+    review_status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved / pending / rejected
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 

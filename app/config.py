@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     copy_ngram: int = 12  # 与知识库原文连续重合这么多个字，判定为疑似照搬
     max_rewrite_attempts: int = 1  # 命中禁用内容时自动改写的次数
 
+    # 自动入库
+    ingest_max_chunks: int = 40  # 每条资料最多处理多少段（控制成本）
+    dedup_similarity: float = 0.92  # 和已有卡片的向量相似度超过这个值视为重复
+
     products_dir: Path = ROOT / "products"
     channels_dir: Path = ROOT / "channels"
     compliance_dir: Path = ROOT / "compliance"

@@ -67,8 +67,9 @@ def gen_out(g: Generation) -> dict:
 
 
 def card_out(c: KnowledgeCard) -> dict:
-    return {"id": c.id, "topic": c.topic, "points": c.points, "source": c.source,
-            "risk_level": c.risk_level, "tags": c.tags}
+    return {"id": c.id, "pool": c.product, "domain": c.domain, "topic": c.topic, "points": c.points,
+            "source": c.source, "risk_level": c.risk_level, "tags": c.tags, "origin": c.origin,
+            "review_status": c.review_status}
 
 
 def get_gen(session: Session, gen_id: int) -> Generation:
@@ -178,33 +179,68 @@ def export_generation(gen_id: int, user: User = Depends(auth.current_user), sess
 
 # ---------- 知识库 ----------
 
+class CardReviewIn(BaseModel):
+    action: Literal["approve", "reject"]
+
+
+def get_card(session: Session, card_id: int) -> KnowledgeCard:
+    c = session.get(KnowledgeCard, card_id)
+    if c is None or c.product not in load_product().pools():
+        raise HTTPException(404, "找不到这张卡片")
+    return c
+
+
 @app.get("/api/knowledge")
-def list_knowledge(q: str = "", user: User = Depends(auth.require("reviewer")),
+def list_knowledge(q: str = "", status: Literal["approved", "pending", "rejected"] = "approved", limit: int = 100,
+                   user: User = Depends(auth.require("reviewer")),
                    session: Session = Depends(get_session), llm: LLM = Depends(llm_dep)):
-    pid = load_product().id
-    if q.strip():
-        cards = knowledge.search(session, pid, q, llm, k=20)
+    """status=pending 是待人工审核的中高风险卡片。"""
+    pools = load_product().pools()
+    if q.strip() and status == "approved":
+        cards = knowledge.search(session, pools, q, llm, k=20)
     else:
         cards = session.scalars(select(KnowledgeCard).where(
-            KnowledgeCard.product == pid, KnowledgeCard.active.is_(True)).order_by(KnowledgeCard.id.desc()))
+            KnowledgeCard.product.in_(pools), KnowledgeCard.active.is_(True),
+            KnowledgeCard.review_status == status).order_by(KnowledgeCard.id.desc()).limit(min(limit, 500)))
     return [card_out(c) for c in cards]
 
 
+@app.get("/api/knowledge/stats")
+def knowledge_stats(user: User = Depends(auth.require("reviewer")), session: Session = Depends(get_session)):
+    from sqlalchemy import func
+
+    rows = session.execute(select(
+        KnowledgeCard.product, KnowledgeCard.review_status, func.count()).where(
+        KnowledgeCard.product.in_(load_product().pools()), KnowledgeCard.active.is_(True)).group_by(
+        KnowledgeCard.product, KnowledgeCard.review_status))
+    return [{"pool": p, "review_status": s, "count": n} for p, s, n in rows]
+
+
 @app.post("/api/knowledge")
-def add_knowledge(cards: list[knowledge.CardIn], user: User = Depends(auth.require("admin")),
+def add_knowledge(cards: list[knowledge.CardIn], pool: str | None = None, user: User = Depends(auth.require("admin")),
                   session: Session = Depends(get_session), llm: LLM = Depends(llm_dep)):
+    target = pool or load_product().id
+    if target not in load_product().pools():
+        raise HTTPException(400, f"只能写入这些知识库：{load_product().pools()}")
     try:
-        rows = knowledge.add_cards(session, load_product().id, cards, llm)
+        rows = knowledge.add_cards(session, target, cards, llm)
     except LLMError as e:
         raise HTTPException(502, str(e)) from e
     return {"added": len(rows), "skipped": len(cards) - len(rows)}
 
 
+@app.post("/api/knowledge/{card_id}/review")
+def review_knowledge(card_id: int, body: CardReviewIn, user: User = Depends(auth.require("reviewer")),
+                     session: Session = Depends(get_session)):
+    c = get_card(session, card_id)
+    c.review_status = "approved" if body.action == "approve" else "rejected"
+    session.commit()
+    return card_out(c)
+
+
 @app.delete("/api/knowledge/{card_id}")
 def remove_knowledge(card_id: int, user: User = Depends(auth.require("admin")), session: Session = Depends(get_session)):
-    c = session.get(KnowledgeCard, card_id)
-    if c is None or c.product != load_product().id:
-        raise HTTPException(404, "找不到这张卡片")
+    c = get_card(session, card_id)
     c.active = False
     session.commit()
     return {"ok": True}

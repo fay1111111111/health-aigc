@@ -41,6 +41,16 @@ engine = make_engine(get_settings().database_url)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
+# 已部署的数据库升级：给旧表补上后来新增的列（只加不删，可重复执行）
+_UPGRADES = [
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS domain VARCHAR(32) DEFAULT ''",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS source_id INTEGER REFERENCES sources(id)",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS origin VARCHAR(16) DEFAULT 'manual'",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS review_status VARCHAR(16) DEFAULT 'approved'",
+    "CREATE INDEX IF NOT EXISTS ix_knowledge_cards_review_status ON knowledge_cards (review_status)",
+]
+
+
 def init_db(bind=None) -> None:
     from . import models  # noqa: F401  注册所有表
 
@@ -49,6 +59,10 @@ def init_db(bind=None) -> None:
         with bind.begin() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
     Base.metadata.create_all(bind)
+    if bind.dialect.name == "postgresql":
+        with bind.begin() as conn:
+            for sql in _UPGRADES:
+                conn.execute(text(sql))
 
 
 def get_session():

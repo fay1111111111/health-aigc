@@ -1,0 +1,278 @@
+# 第一批：大健康公开资料（政府、学会、国际机构公开科普与指南，公有领域古籍）
+# 全部进入大健康通用库 common，所有产品线共享。
+
+# ---------- 睡眠 ----------
+- url: https://www.nhc.gov.cn/guihuaxxs/c100133/202503/70d5836afe804a858b899ee951a24a13.shtml
+  title: 睡眠健康核心信息及释义
+  publisher: 全国爱卫办（国家卫生健康委网站）
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 睡眠
+
+# ---------- 健康素养 ----------
+- url: https://www.qz.gov.cn/art/2024/6/7/art_1229568211_59037300.html
+  title: 中国公民健康素养——基本知识与技能释义（2024年版）
+  publisher: 国家卫生健康委（衢州市人民政府网站转载）
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202409/t20240902_6509936.htm
+  title: 新版健康素养66条（5～8）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202409/t20240909_6513619.htm
+  title: 新版健康素养66条（9～12）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202411/t20241104_6557671.htm
+  title: 新版健康素养66条（29～32）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202501/t20250106_6619162.htm
+  title: 新版健康素养66条（49～52）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202502/t20250206_6711739.htm
+  title: 新版健康素养66条（53～56）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: http://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202503/t20250303_6771416.htm
+  title: 新版健康素养66条（57～60）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202503/t20250318_6784484.htm
+  title: 新版健康素养66条（61～63）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202504/t20250402_6794031.htm
+  title: 新版健康素养66条（64～66）
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 健康素养
+
+# ---------- 营养膳食 ----------
+- url: https://wjw.beijing.gov.cn/xwzx_20031/xwfb/202610/t20261021_4913349.html
+  title: 科学饮食，健康生活——《中国居民膳食指南（2022）》核心准则
+  publisher: 北京市卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 营养膳食
+- url: https://wsjk.gansu.gov.cn/wsjk/c112807/202205/2052095.shtml
+  title: 《中国居民膳食指南（2022）》平衡膳食八准则
+  publisher: 甘肃省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 营养膳食
+- url: https://wjw.fujian.gov.cn/ztzl/jkjy/jkzgxd/202206/t20220615_5930367.htm
+  title: 《中国居民膳食指南（2022）》核心推荐
+  publisher: 福建省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 营养膳食
+- url: https://wjw.tongliao.gov.cn/xwzx/jktl/202209/t20220908_834999.html
+  title: “三减三健”宣传核心信息
+  publisher: 通辽市卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 营养膳食
+- url: http://www.qzlj.gov.cn/zwgk/zdgkxx/jbylws/jklj/202109/t20210903_2613730.htm
+  title: 减盐、减油、减糖核心信息
+  publisher: 泉州市洛江区人民政府
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 营养膳食
+
+# ---------- 体重管理 ----------
+- url: https://www.gov.cn/zhengce/zhengceku/202407/P020240703481519509521.pdf
+  title: 居民体重管理核心知识（2024年版）释义
+  publisher: 国家卫生健康委（中国政府网）
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 体重管理
+- url: https://www.nhc.gov.cn/ylyjs/zcwj/202412/75cb79c171c94def9e768193e65484f7/files/1736390749000_59785.pdf
+  title: 体重管理指导原则（2024年版）
+  publisher: 国家卫生健康委员会
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 体重管理
+
+# ---------- 身体活动 ----------
+- url: https://www.sport.gov.cn/n20001280/n20745751/n20767239/c21426875/content.html
+  title: 世卫组织发布《关于身体活动和久坐行为指南》
+  publisher: 国家体育总局
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 身体活动
+- url: https://www.sport.gov.cn/n20001280/n20001265/n20066978/c25592774/content.html
+  title: 《中国居民膳食指南（2022）》发布——吃动平衡 科学减重
+  publisher: 国家体育总局
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 身体活动
+- url: http://www.natcm.gov.cn/bangongshi/gongzuodongtai/2025-04-17/36153.html
+  title: “中医药与运动健康”专题发布会（文字实录）
+  publisher: 国家中医药管理局
+  source_type: gov
+  license_note: 政府公开发布会实录
+  domain: 身体活动
+
+# ---------- 心理健康 ----------
+- url: https://wsjk.ln.gov.cn/wsjk/jkln/jkzs/2022120516564493835/index.shtml
+  title: 心理健康素养十条
+  publisher: 辽宁省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 心理健康
+- url: https://www.nhc.gov.cn/wjw/xlws/200707/97d9ae0571a444179e46cfa2c5262c79.shtml
+  title: 精神卫生宣传教育核心信息和知识要点
+  publisher: 国家卫生健康委员会
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 心理健康
+- url: https://www.zlq.gov.cn/zlq/ztzl/jkzlqxd/281c9b1906a94e21a8cd16e5eb5acbcc/index.shtml
+  title: 健康中国行动——心理健康促进行动
+  publisher: 正蓝旗人民政府
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 心理健康
+
+# ---------- 慢病预防 ----------
+- url: https://www.nanchong.gov.cn/jkzx/jkjy/mbfz/202209/t20220928_1730761.html
+  title: 高血压防治核心信息
+  publisher: 南充市疾病预防控制中心
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 慢病预防
+- url: http://www.dazu.gov.cn/zwgk_175/zfxxgkml01/jkkp/jkzgcqxd/202204/t20220406_10592162.html
+  title: 2型糖尿病防治健康教育核心信息及释义（2021版）
+  publisher: 重庆市大足区人民政府
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 慢病预防
+
+# ---------- 老年健康 ----------
+- url: https://wsjk.ln.gov.cn/wsjk/index/syxwxx/csdt/204B6228303040CBA4D3FCC6D5EDB287/index.shtml
+  title: 老年健康核心信息
+  publisher: 辽宁省卫生健康委员会
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 老年健康
+- url: https://www.yantai.gov.cn/art/2024/11/1/art_92819_3228542.html
+  title: 老年健康核心信息、预防老年人跌倒健康教育核心信息
+  publisher: 烟台市人民政府
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 老年健康
+
+# ---------- 中医养生 ----------
+- url: http://www.natcm.gov.cn/bangongshi/gongzuodongtai/2018-03-25/5248.html
+  title: 关于发布《中国公民中医养生保健素养》的公告
+  publisher: 国家中医药管理局
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 中医养生
+- url: http://www.cqsdj.gov.cn/bmjz/bm/wsjkwyh/zwgk_72304/fdzdgknr_72306/zdms/yl/xxfw/202311/t20231113_12548700.html
+  title: 《中国公民中医养生保健素养》全文
+  publisher: 重庆市垫江县人民政府
+  source_type: gov
+  license_note: 政府公开科普
+  domain: 中医养生
+- url: http://www.natcm.gov.cn/bangongshi/gongzuodongtai/2018-03-25/5247.html
+  title: 《中国公民中医养生保健素养》和《健康教育中医药基本内容》新闻发布会文字实录
+  publisher: 国家中医药管理局
+  source_type: gov
+  license_note: 政府公开发布会实录
+  domain: 中医养生
+- url: http://www.natcm.gov.cn/bangongshi/gongzuodongtai/2025-09-16/36929.html
+  title: “秋季中医药养生”主题发布会（文字实录）
+  publisher: 国家中医药管理局
+  source_type: gov
+  license_note: 政府公开发布会实录
+  domain: 中医养生
+- url: http://www.natcm.gov.cn/bangongshi/gongzuodongtai/2025-12-17/37440.html
+  title: “中医药守护冬日健康”专题发布会（文字实录）
+  publisher: 国家中医药管理局
+  source_type: gov
+  license_note: 政府公开发布会实录
+  domain: 中医养生
+
+# ---------- 综合 ----------
+- url: https://www.nhc.gov.cn/guihuaxxs/c100133/201907/2a6ed52f1c264203b5351bdbbadd2da8.shtml
+  title: 健康中国行动（2019—2030年）
+  publisher: 健康中国行动推进委员会（国家卫生健康委网站）
+  source_type: gov
+  license_note: 政府公开文件
+  domain: 生活方式
+
+# ---------- 古籍（公有领域；国内服务器可能无法访问维基文库，失败可忽略） ----------
+- url: https://zh.wikisource.org/zh-hans/%E9%BB%83%E5%B8%9D%E5%85%A7%E7%B6%93/%E7%B4%A0%E5%95%8F%E7%AC%AC%E4%B8%80%E5%8D%B7
+  title: 黄帝内经·素问第一卷（上古天真论、四气调神大论等）
+  publisher: 维基文库
+  source_type: classic
+  license_note: 公有领域古籍
+  domain: 中医养生
+- url: https://zh.wikisource.org/zh-hans/%E5%82%99%E6%80%A5%E5%8D%83%E9%87%91%E8%A6%81%E6%96%B9/%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%83
+  title: 备急千金要方·卷二十七（养性）
+  publisher: 维基文库
+  source_type: classic
+  license_note: 公有领域古籍
+  domain: 中医养生
+
+# ---------- 国际权威机构（只提炼事实并改写） ----------
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/healthy-diet
+  title: 健康饮食（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 营养膳食
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/physical-activity
+  title: 身体活动（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 身体活动
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/obesity-and-overweight
+  title: 肥胖和超重（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 体重管理
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/hypertension
+  title: 高血压（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 慢病预防
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/depression
+  title: 抑郁症（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 心理健康
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/tobacco
+  title: 烟草（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 生活方式
+- url: https://www.who.int/zh/news-room/fact-sheets/detail/alcohol
+  title: 酒精（情况说明书）
+  publisher: 世界卫生组织
+  source_type: international
+  license_note: WHO 公开资料，仅提炼事实改写
+  domain: 生活方式

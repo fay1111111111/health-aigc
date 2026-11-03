@@ -1,13 +1,21 @@
-<view class="container">
-  <view class="empty" wx:if="{{denied}}">知识库仅审核人员和管理员可查看</view>
+<view class="empty" wx:if="{{denied}}">知识库仅审核人员和管理员可查看</view>
 
-  <block wx:else>
-    <view class="search">
-      <input class="input" value="{{q}}" bindinput="onInput" bindconfirm="search" confirm-type="search" placeholder="按意思搜索，例如：睡前放松" />
-      <view class="search-btn" bindtap="search">搜索</view>
-    </view>
-    <view class="muted hint" wx:if="{{q}}">按相关度排序 · <text class="link" bindtap="clear">显示全部</text></view>
-    <view class="muted hint" wx:else>共 {{items.length}} 张卡片 · 新增和下架请联系管理员</view>
+<block wx:else>
+  <view class="tabs">
+    <view wx:for="{{tabs}}" wx:key="key" class="tab {{index === active ? 'on' : ''}}" data-i="{{index}}" bindtap="switchTab">{{item.text}}</view>
+  </view>
+
+  <view class="container">
+    <view class="muted hint">{{stats}}</view>
+
+    <block wx:if="{{active === 0}}">
+      <view class="search">
+        <input class="input" value="{{q}}" bindinput="onInput" bindconfirm="search" confirm-type="search" placeholder="按意思搜索，例如：睡前放松" />
+        <view class="search-btn" bindtap="search">搜索</view>
+      </view>
+      <view class="muted hint" wx:if="{{q}}">按相关度排序 · <text class="link" bindtap="clear">显示最新</text></view>
+    </block>
+    <view class="muted hint" wx:else>中、高风险卡片需人工确认后才会用于生成文案。内容不准确、涉及诊疗用药或和业务无关的请驳回。</view>
 
     <view class="card error" wx:if="{{error}}">{{error}}</view>
 
@@ -16,10 +24,18 @@
         <view class="topic">{{item.topic}}</view>
         <text class="tag {{item.risk_level === 'high' ? 'tag-rejected' : (item.risk_level === 'mid' ? 'tag-pending' : 'tag-approved')}}">{{item.riskText}}</text>
       </view>
+      <view class="meta">
+        <text class="tag tag-neutral">{{item.poolText}}</text>
+        <text class="tag tag-neutral" wx:if="{{item.domain}}">{{item.domain}}</text>
+      </view>
       <view class="points">{{item.points}}</view>
       <view class="muted" wx:if="{{item.source}}">出处：{{item.source}}</view>
+      <view class="row actions" wx:if="{{active === 1}}">
+        <button class="btn-danger half" data-id="{{item.id}}" data-action="reject" bindtap="review">驳回</button>
+        <button class="btn half" data-id="{{item.id}}" data-action="approve" bindtap="review">通过</button>
+      </view>
     </view>
 
-    <view class="empty" wx:if="{{!loading && !error && items.length === 0}}">还没有知识卡片</view>
-  </block>
-</view>
+    <view class="empty" wx:if="{{!loading && !error && items.length === 0}}">{{active === 1 ? '没有待审核的卡片' : '还没有知识卡片'}}</view>
+  </view>
+</block>

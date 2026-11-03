@@ -85,6 +85,9 @@ curl -X POST http://127.0.0.1:${API_PORT:-8100}/api/generate \
 | 查看日志 | `docker compose logs -f api` |
 | 重启 | `docker compose restart api` |
 | 备份数据库 | `docker compose exec -T db pg_dump -U aigc aigc > backup-$(date +%Y%m%d).sql` |
+| 自动抓取一批公开资料入库 | `docker compose exec -T api python -m scripts.ingest_sources sources/batch_01.yaml` |
+| 重试失败的资料 | 上面的命令加 `--retry-failed` |
+| 导出资料来源登记表（备案用） | `docker compose exec -T api python -m scripts.export_sources > sources-$(date +%Y%m%d).csv` |
 | 查看账号 | `docker compose exec -T api python -m scripts.deactivate_user --list` |
 | 停用账号（令牌泄露或人员离开） | `docker compose exec -T api python -m scripts.deactivate_user <账号ID>` |
 

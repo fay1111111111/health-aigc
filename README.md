@@ -21,6 +21,14 @@ tests/               自动化测试
 miniprogram/         内部小程序（用微信开发者工具打开，说明见 miniprogram/README.md）
 ```
 
+## 知识库
+
+- **两层**：产品线自己的库（如 `sleep`）+ 大健康通用库 `common`，生成时一起检索
+- **自动入库**：`sources/batch_*.yaml` 列出公开资料，`scripts.ingest_sources` 自动抓取、由模型改写成卡片、做照搬检测和去重
+- **审核**：低风险卡片直接可用；中、高风险卡片进入「待审核」，在小程序知识库页审核通过后才参与生成
+- **营销生成只用低、中风险卡片**（`generation_max_risk`）；高风险卡片只用于查询
+- **来源登记**：每条资料记在 `sources` 表，`scripts.export_sources` 导出 CSV，备案时说明语料来源
+
 ## 新增一条产品线
 
 1. 复制 `products/sleep/` 为 `products/<新产品线>/`，改 `product.yaml`（名称、受众、内容类型、启用的渠道、专属合规词）
