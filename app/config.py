@@ -37,7 +37,9 @@ class Settings(BaseSettings):
 
     # 自动入库
     ingest_max_chunks: int = 40  # 每条资料最多处理多少段（控制成本）
-    dedup_similarity: float = 0.92  # 和已有卡片的向量相似度超过这个值视为重复
+    # 和已有卡片的向量相似度超过这个值视为重复。可在 .env 用 DEDUP_SIMILARITY 调整：
+    # 调低去重更狠（可能误伤相近但不同的知识点），调高更宽松（可能留下换了说法的重复）
+    dedup_similarity: float = 0.88
 
     products_dir: Path = ROOT / "products"
     channels_dir: Path = ROOT / "channels"

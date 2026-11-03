@@ -44,12 +44,13 @@ def main() -> None:
     llm = get_llm()
     totals = {"done": 0, "failed": 0, "skipped": 0, "added": 0, "pending": 0, "copy": 0, "dup": 0}
     failed = []
+    seen: list = []  # 本次运行内跨资料去重：（向量, 主题）
     with SessionLocal() as session:
         for i, src in enumerate(sources, 1):
             prev = session.scalar(select(Source).where(Source.url == src.url))
             force = args.force or (args.retry_failed and prev is not None and prev.status == "failed")
             t0 = time.time()
-            r = ingest_source(session, llm, src, force=force, dry_run=args.dry_run)
+            r = ingest_source(session, llm, src, force=force, dry_run=args.dry_run, seen=seen)
             totals[r.status] = totals.get(r.status, 0) + 1
             totals["added"] += r.added
             totals["pending"] += r.pending
@@ -64,6 +65,8 @@ def main() -> None:
                       f"（{time.time() - t0:.0f} 秒）", flush=True)
                 for c in r.cards:
                     print(f"    · [{c.risk_level}/{c.domain}] {c.topic}：{c.points}", flush=True)
+                for note in r.notes:
+                    print(f"    ※ {note}", flush=True)
             elif r.status == "skipped":
                 print(f"{label}：已处理过，跳过", flush=True)
             else:

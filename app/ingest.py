@@ -244,7 +244,7 @@ def _split_copied(cards: list[CardIn], chunk: str, n: int) -> tuple[list[CardIn]
 
 
 def process_chunk(session: Session, llm: LLM, chunk: str, src: SourceIn, result: IngestResult,
-                  seen_vecs: list[list[float]]) -> tuple[list[CardIn], list[list[float]]]:
+                  seen: list[tuple[list[float], str]]) -> tuple[list[CardIn], list[list[float]]]:
     """提取一段资料的卡片，处理照搬和重复，返回可以入库的卡片和向量。"""
     settings = get_settings()
     cards = extract_cards(llm, chunk, src)
@@ -265,20 +265,30 @@ def process_chunk(session: Session, llm: LLM, chunk: str, src: SourceIn, result:
     vectors = llm.embed([knowledge.card_text(c.topic, c.points) for c in clean])
     keep_cards, keep_vecs = [], []
     for c, v in zip(clean, vectors):
-        _, sim = knowledge.most_similar(session, [src.pool], v, llm)
-        dup = sim >= settings.dedup_similarity or any(
-            knowledge.cosine(v, kv) >= settings.dedup_similarity for kv in seen_vecs + keep_vecs)
-        if dup:
+        db_card, sim = knowledge.most_similar(session, [src.pool], v, llm)
+        match = db_card.topic if db_card is not None else ""
+        for kv, kt in seen + list(zip(keep_vecs, [k.topic for k in keep_cards])):
+            s = knowledge.cosine(v, kv)
+            if s > sim:
+                sim, match = s, kt
+        if sim >= settings.dedup_similarity:
             result.dropped_dup += 1
+            result.notes.append(f"去重：「{c.topic}」与「{match}」相似度 {sim:.2f}")
         else:
+            if sim >= settings.dedup_similarity - 0.08:
+                result.notes.append(f"相近但保留：「{c.topic}」与「{match}」相似度 {sim:.2f}")
             keep_cards.append(c)
             keep_vecs.append(v)
     return keep_cards, keep_vecs
 
 
 def ingest_source(session: Session, llm: LLM, src: SourceIn, fetcher=fetch_text, force: bool = False,
-                  dry_run: bool = False) -> IngestResult:
-    """dry_run=True 时只提取、不入库、不改变资料状态，提取结果放在 result.cards 里供查看。"""
+                  dry_run: bool = False, seen: list[tuple[list[float], str]] | None = None) -> IngestResult:
+    """dry_run=True 时只提取、不入库、不改变资料状态，提取结果放在 result.cards 里供查看。
+
+    seen：同一次运行里前面资料已保留卡片的（向量, 主题），跨资料去重用（试跑时尤其需要，
+    因为试跑的卡片不进数据库，数据库去重看不到它们）。
+    """
     settings = get_settings()
     row = None
     if not dry_run:
@@ -294,10 +304,11 @@ def ingest_source(session: Session, llm: LLM, src: SourceIn, fetcher=fetch_text,
         if not chunks:
             raise FetchError("正文太短，没有可用内容")
 
-        seen_vecs: list[list[float]] = []
+        if seen is None:
+            seen = []
         for chunk in chunks:
-            keep_cards, keep_vecs = process_chunk(session, llm, chunk, src, result, seen_vecs)
-            seen_vecs += keep_vecs
+            keep_cards, keep_vecs = process_chunk(session, llm, chunk, src, result, seen)
+            seen.extend(zip(keep_vecs, [c.topic for c in keep_cards]))
             if dry_run:
                 result.cards += keep_cards
                 result.added += sum(1 for c in keep_cards if c.risk_level == "low")

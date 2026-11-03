@@ -90,6 +90,17 @@ def test_dry_run_writes_nothing(session, fake_llm):
     assert session.scalar(select(Source)) is None
 
 
+def test_dry_run_dedups_across_sources(session, fake_llm):
+    card = {"topic": "规律作息", "points": "每天在差不多的时间上床和起床，周末也尽量别差太多，身体的节律会更稳定。", "risk_level": "low"}
+    fake_llm.replies = [reply(card), reply(card)]
+    seen = []
+    src2 = ingest.SourceIn(url="https://example.gov.cn/repost", title="转载", publisher="另一个网站", pool="common")
+    r1 = ingest.ingest_source(session, fake_llm, SRC, fetcher=lambda u: ARTICLE, dry_run=True, seen=seen)
+    r2 = ingest.ingest_source(session, fake_llm, src2, fetcher=lambda u: ARTICLE, dry_run=True, seen=seen)
+    assert len(r1.cards) == 1 and r2.cards == [] and r2.dropped_dup == 1
+    assert "规律作息" in r2.notes[0]
+
+
 def test_short_page_fails_instead_of_done(monkeypatch):
     class Resp:
         status_code = 200
