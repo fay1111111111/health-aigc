@@ -28,6 +28,20 @@ def create_user(session: Session, name: str, role: str) -> tuple[User, str]:
     return user, token
 
 
+def deactivate_user(session: Session, user_id: int) -> User:
+    user = session.get(User, user_id)
+    if user is None:
+        raise ValueError("找不到这个账号")
+    if user.role == "admin" and user.active:
+        others = session.scalars(select(User).where(
+            User.role == "admin", User.active.is_(True), User.id != user_id)).first()
+        if others is None:
+            raise ValueError("这是最后一个管理员账号，请先创建新的管理员再停用")
+    user.active = False
+    session.commit()
+    return user
+
+
 def current_user(authorization: str = Header(default=""), session: Session = Depends(get_session)) -> User:
     token = authorization.removeprefix("Bearer ").strip()
     if not token:

@@ -2,6 +2,9 @@
 
 目标：用新底座替换服务器上旧的中医药平台 `/opt/tcm-aigc`。全程用 Docker，不影响服务器上的其他项目。
 
+> 当前服务器只有 Docker Compose v1（`docker-compose`，带连字符）。下文的 `docker compose` 在这台服务器上都写成 `docker-compose`。
+> `.env` 里必须有 `COMPOSE_PROJECT_NAME=health-aigc`，否则在 `/opt/tcm-aigc` 目录下项目名会变成 `tcm-aigc`，和旧项目的数据卷撞名。
+
 ## 第 1 步：盘点并备份旧项目（替换前必须做）
 
 1. 查看旧项目是怎么运行的，记下它占用的端口：
@@ -79,6 +82,8 @@ curl -X POST http://127.0.0.1:${API_PORT:-8100}/api/generate \
 | 更新代码 | `git pull && docker compose up -d --build` |
 | 查看日志 | `docker compose logs -f api` |
 | 重启 | `docker compose restart api` |
-| 备份数据库 | `docker compose exec db pg_dump -U aigc aigc > backup-$(date +%Y%m%d).sql` |
+| 备份数据库 | `docker compose exec -T db pg_dump -U aigc aigc > backup-$(date +%Y%m%d).sql` |
+| 查看账号 | `docker compose exec -T api python -m scripts.deactivate_user --list` |
+| 停用账号（令牌泄露或人员离开） | `docker compose exec -T api python -m scripts.deactivate_user <账号ID>` |
 
 小程序正式上线前，需要给接口配置 HTTPS 域名（微信要求），域名和 ICP 备案由合作方负责。

@@ -216,3 +216,20 @@ def remove_knowledge(card_id: int, user: User = Depends(auth.require("admin")), 
 def add_user(body: UserIn, user: User = Depends(auth.require("admin")), session: Session = Depends(get_session)):
     new_user, token = auth.create_user(session, body.name, body.role)
     return {"id": new_user.id, "name": new_user.name, "role": new_user.role, "token": token}
+
+
+@app.get("/api/users")
+def list_users(user: User = Depends(auth.require("admin")), session: Session = Depends(get_session)):
+    rows = session.scalars(select(User).order_by(User.id))
+    return [{"id": u.id, "name": u.name, "role": u.role, "active": u.active} for u in rows]
+
+
+@app.post("/api/users/{user_id}/deactivate")
+def deactivate_user(user_id: int, user: User = Depends(auth.require("admin")),
+                    session: Session = Depends(get_session)):
+    """停用账号（令牌立即失效）。令牌泄露或人员离开时使用。"""
+    try:
+        auth.deactivate_user(session, user_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return {"ok": True}

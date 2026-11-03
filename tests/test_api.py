@@ -113,6 +113,27 @@ def test_invalid_channel(client, tokens):
     assert r.status_code == 400
 
 
+def test_deactivate_user_revokes_token(client, tokens):
+    users = client.get("/api/users", headers=h(tokens["admin"])).json()
+    op = next(u for u in users if u["role"] == "operator")
+    r = client.post(f"/api/users/{op['id']}/deactivate", headers=h(tokens["admin"]))
+    assert r.status_code == 200
+    assert client.get("/api/me", headers=h(tokens["operator"])).status_code == 401
+
+
+def test_cannot_deactivate_last_admin(client, tokens):
+    users = client.get("/api/users", headers=h(tokens["admin"])).json()
+    admin = next(u for u in users if u["role"] == "admin")
+    r = client.post(f"/api/users/{admin['id']}/deactivate", headers=h(tokens["admin"]))
+    assert r.status_code == 400
+
+    # 先建新管理员，再停用旧的
+    new_token = client.post("/api/users", json={"name": "新管理员", "role": "admin"},
+                            headers=h(tokens["admin"])).json()["token"]
+    assert client.post(f"/api/users/{admin['id']}/deactivate", headers=h(new_token)).status_code == 200
+    assert client.get("/api/me", headers=h(tokens["admin"])).status_code == 401
+
+
 def test_admin_creates_user(client, tokens):
     r = client.post("/api/users", json={"name": "小王", "role": "operator"}, headers=h(tokens["admin"]))
     token = r.json()["token"]
