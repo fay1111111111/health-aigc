@@ -1,0 +1,26 @@
+<view class="page safe-bottom">
+  <view class="center">
+    <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onAvatar">
+      <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
+      <view wx:else class="avatar avatar-empty">头像</view>
+    </button>
+    <view class="note">点击更换头像</view>
+  </view>
+
+  <view class="card">
+    <view class="field">
+      <view class="field-label">昵称</view>
+      <input class="field-input" type="nickname" value="{{nickname}}" placeholder="怎么称呼你" placeholder-class="placeholder" maxlength="32" bindinput="onNick" bindblur="onNick" />
+    </view>
+  </view>
+
+  <view class="section-label">我是</view>
+  <view class="card">
+    <view wx:for="{{roles}}" wx:key="id" class="row" hover-class="row-hover" data-id="{{item.id}}" bindtap="pickRole">
+      <text class="row-label">{{item.name}}</text>
+      <text wx:if="{{role === item.id}}" class="tick">✓</text>
+    </view>
+  </view>
+
+  <view class="btn save {{saving ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="save">{{saving ? '保存中…' : '保存'}}</view>
+</view>

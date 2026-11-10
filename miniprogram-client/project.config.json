@@ -1,0 +1,15 @@
+{
+  "description": "药王山沁养 · 对外小程序",
+  "projectname": "yaowangshan-qinyang",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "src/",
+  "libVersion": "3.5.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  }
+}

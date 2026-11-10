@@ -1,0 +1,14 @@
+.form { margin-top: 36rpx; }
+.block { margin-top: 24rpx; }
+.pick { color: var(--green-deep); font-size: 32rpx; padding: 20rpx 0 20rpx 40rpx; }
+.q { font-weight: 600; }
+.save { margin-top: 40rpx; }
+.tip { margin-top: 20rpx; text-align: center; }
+.rec { display: flex; align-items: center; padding: 26rpx 32rpx; position: relative; }
+.rec + .rec::before { content: ""; position: absolute; left: 32rpx; right: 0; top: 0; height: 1px; background: var(--line); transform: scaleY(0.5); }
+.rec-main { flex: 1; min-width: 0; }
+.rec-day { font-size: 30rpx; font-weight: 600; }
+.rec-sub { color: var(--sub); font-size: 26rpx; }
+.rec-note { margin-top: 6rpx; color: var(--hint); font-size: 24rpx; }
+.rec-q { flex: none; margin-left: 24rpx; color: var(--green-deep); font-size: 44rpx; font-weight: 700; }
+.rec-q-unit { margin-left: 4rpx; font-size: 22rpx; font-weight: 400; color: var(--hint); }

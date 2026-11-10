@@ -1,0 +1,12 @@
+{
+  "name": "yaowangshan-qinyang",
+  "private": true,
+  "description": "药王山沁养小程序：命令行上传体验版用，不影响在开发者工具里直接打开",
+  "scripts": {
+    "check": "node ci/check.js",
+    "upload": "node ci/upload.js"
+  },
+  "devDependencies": {
+    "miniprogram-ci": "^2.1.0"
+  }
+}

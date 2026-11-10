@@ -52,7 +52,7 @@ _UPGRADES = [
 
 
 def init_db(bind=None) -> None:
-    from . import models  # noqa: F401  注册所有表
+    from . import client_models, models  # noqa: F401  注册所有表
 
     bind = bind or engine
     if bind.dialect.name == "postgresql":

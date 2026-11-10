@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="head" hover-class="row-hover" bindtap="openProfile">
+    <image wx:if="{{avatar}}" class="avatar" src="{{avatar}}" mode="aspectFill" />
+    <view wx:else class="avatar avatar-empty">{{initial}}</view>
+    <view class="head-main">
+      <view class="name">{{user.nickname || '微信用户'}}</view>
+      <view class="role">{{roleName}}</view>
+    </view>
+    <text class="row-arrow">›</text>
+  </view>
+
+  <view class="section-label">睡眠</view>
+  <view class="card card-pad" hover-class="row-hover" bindtap="openSleep">
+    <block wx:if="{{week.length}}">
+      <view class="sum">
+        <view class="sum-num">{{avgText}}</view>
+        <view class="sum-label">最近 {{week.length}} 次记录的平均睡眠时长</view>
+      </view>
+      <view class="bars">
+        <view wx:for="{{week}}" wx:key="day" class="bar-col">
+          <view class="bar-track"><view class="bar" style="height: {{item.height}}%; opacity: {{item.opacity}}"></view></view>
+          <view class="bar-day">{{item.label}}</view>
+        </view>
+      </view>
+    </block>
+    <view wx:else class="invite">
+      <view class="invite-title">记一下昨晚睡得怎么样</view>
+      <view class="note">每天半分钟，过一阵子回头看，变化会比感觉更清楚。</view>
+    </view>
+    <view class="card-link">{{week.length ? '记录今天 ›' : '开始记录 ›'}}</view>
+  </view>
+
+  <view class="section-label">体验自评</view>
+  <view class="card">
+    <view class="row" hover-class="row-hover" data-kind="before" bindtap="openAssess"><text class="row-label">体验前</text><text class="row-value">此刻的状态</text><text class="row-arrow">›</text></view>
+    <view class="row" hover-class="row-hover" data-kind="after" bindtap="openAssess"><text class="row-label">体验后</text><text class="row-value">做完的感受</text><text class="row-arrow">›</text></view>
+    <view class="row" hover-class="row-hover" data-kind="next_day" bindtap="openAssess"><text class="row-label">次日回访</text><text class="row-value">第二天怎么样</text><text class="row-arrow">›</text></view>
+  </view>
+
+  <view class="section-label">隐私与数据</view>
+  <view class="card">
+    <view class="row">
+      <text class="row-label">记录睡眠与自评信息</text>
+      <switch checked="{{user.health_consent}}" color="#2F9E77" bindchange="toggleHealth" />
+    </view>
+    <view class="row" hover-class="row-hover" bindtap="clearChat"><text class="row-label">清空对话记录</text><text class="row-arrow">›</text></view>
+    <view class="row" hover-class="row-hover" data-type="privacy" bindtap="openLegal"><text class="row-label">隐私政策</text><text class="row-arrow">›</text></view>
+    <view class="row" hover-class="row-hover" data-type="terms" bindtap="openLegal"><text class="row-label">用户协议</text><text class="row-arrow">›</text></view>
+  </view>
+
+  <view class="card logout">
+    <view class="row row-danger" hover-class="row-hover" bindtap="deleteAccount"><text class="row-label">注销账号</text></view>
+  </view>
+
+  <view class="note about">{{appName}} {{version}}\n提供放松与睡眠习惯方面的信息，不是医疗服务</view>
+</view>

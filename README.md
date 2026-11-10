@@ -70,3 +70,12 @@ python -m pytest -q tests
 ```
 
 部署见 [DEPLOY.md](DEPLOY.md)。
+
+## 对外小程序「药王山沁养」
+
+`miniprogram-client/` 是面向 C 端用户和 B 端伙伴的小程序，和内部小程序 `miniprogram/` 分开；后端接口在同一套服务里，统一挂在 `/api/c` 下。说明见 `miniprogram-client/README.md`。
+
+- `app/client_api.py`：登录注册、问答对话、睡眠记录、体验自评、伙伴意向登记；`/api/client-admin/*` 是给内部账号看的后台接口
+- `app/qa.py`：问答匹配。只从 `products/<产品线>/qa/*.json` 导入的、状态为已发布的问答里作答，不调用大模型
+- `app/client_models.py`：对外用户、问答、对话、记录等表，和内部账号互不相通
+- 服务启动时自动导入问答清单，已存在的条目不覆盖

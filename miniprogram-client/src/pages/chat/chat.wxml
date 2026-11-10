@@ -1,0 +1,64 @@
+<view class="chat">
+  <scroll-view class="stream" scroll-y scroll-into-view="{{anchor}}" scroll-with-animation enhanced show-scrollbar="{{false}}">
+    <!-- 欢迎区 -->
+    <view class="welcome">
+      <view class="orb"></view>
+      <view class="hello">{{greeting}}</view>
+      <view class="hello-sub">想了解颅骶放松，或者睡前想慢下来，都可以问我。</view>
+    </view>
+
+    <view wx:if="{{loadError}}" class="card card-pad load-error">
+      <view>{{loadError}}</view>
+      <view class="btn-text" bindtap="reload">重新加载</view>
+    </view>
+
+    <block wx:if="{{categories.length}}">
+      <view class="segment cats">
+        <view wx:for="{{categories}}" wx:key="id" class="segment-item {{index === activeCat ? 'segment-on' : ''}}" data-index="{{index}}" bindtap="pickCategory">{{item.name}}</view>
+      </view>
+      <view class="card qlist">
+        <view wx:for="{{visibleQuestions}}" wx:key="code" class="row" hover-class="row-hover" data-code="{{item.code}}" data-question="{{item.question}}" bindtap="askPreset">
+          <text class="row-label q-text">{{item.question}}</text>
+          <text class="row-arrow">›</text>
+        </view>
+      </view>
+      <view wx:if="{{canShuffle}}" class="btn-text" bindtap="shuffle">换几个问题</view>
+    </block>
+
+    <!-- 对话 -->
+    <view wx:if="{{messages.length}}" class="divider">对话</view>
+    <block wx:for="{{messages}}" wx:key="key">
+      <view wx:if="{{item.role === 'user'}}" class="line line-user">
+        <view class="bubble bubble-user">{{item.text}}</view>
+      </view>
+      <view wx:else class="line line-bot">
+        <view class="orb orb-small avatar"></view>
+        <view class="bot-col">
+          <view wx:if="{{item.loading}}" class="bubble bubble-bot typing">
+            <view class="dot"></view><view class="dot"></view><view class="dot"></view>
+          </view>
+          <view wx:else class="bubble bubble-bot {{item.kind === 'risk' ? 'bubble-risk' : ''}}">
+            <view wx:if="{{item.kind === 'risk'}}" class="risk-title">请先照顾好自己</view>
+            <text user-select>{{item.shown}}</text>
+            <view wx:if="{{item.done && item.related.length}}" class="related">
+              <view wx:for="{{item.related}}" wx:for-item="r" wx:key="code" class="chip" hover-class="chip-hover" data-code="{{r.code}}" data-question="{{r.question}}" bindtap="askPreset">{{r.question}}</view>
+            </view>
+          </view>
+          <view wx:if="{{item.done && item.kind === 'answer'}}" class="feedback">
+            <view class="fb {{item.helpful === true ? 'fb-on' : ''}}" data-index="{{index}}" data-helpful="{{true}}" bindtap="rate">有帮助</view>
+            <view class="fb {{item.helpful === false ? 'fb-on' : ''}}" data-index="{{index}}" data-helpful="{{false}}" bindtap="rate">没帮助</view>
+          </view>
+        </view>
+      </view>
+    </block>
+    <view id="bottom" class="bottom-space"></view>
+  </scroll-view>
+
+  <view class="composer">
+    <view class="composer-inner">
+      <input class="composer-input" value="{{input}}" placeholder="输入你想了解的问题" placeholder-class="placeholder" maxlength="300" confirm-type="send" cursor-spacing="20" bindinput="onInput" bindconfirm="send" />
+      <view class="send {{input && !sending ? '' : 'send-off'}}" bindtap="send">发送</view>
+    </view>
+    <view class="disclaimer">回答来自老师审核过的问答，由程序匹配给出；不能替代专业诊疗</view>
+  </view>
+</view>

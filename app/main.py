@@ -5,12 +5,14 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import auth, generation, knowledge
-from .db import get_session, init_db
+from . import auth, client_api, generation, knowledge, qa
+from .config import get_settings
+from .db import SessionLocal, get_session, init_db
 from .llm import LLM, LLMError, get_llm
 from .models import Generation, KnowledgeCard, User
 from .products import load_product, product_channels
@@ -21,12 +23,18 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
-    load_product()  # 启动时就校验产品线配置，配置有误直接报错
+    product = load_product()  # 启动时就校验产品线配置，配置有误直接报错
+    with SessionLocal() as session:
+        qa.seed(session, product.id)  # 导入问答清单（已存在的不覆盖）
     yield
 
 
 app = FastAPI(title="大健康 AIGC 平台", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(client_api.router)
+app.include_router(client_api.admin)
+get_settings().upload_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=get_settings().upload_dir), name="uploads")
 
 
 def llm_dep() -> LLM:

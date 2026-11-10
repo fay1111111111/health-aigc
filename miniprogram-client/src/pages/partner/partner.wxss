@@ -1,0 +1,13 @@
+.hero { margin-top: 36rpx; background: linear-gradient(160deg, #E4F3EB, #F6FBF8); }
+.hero-title { font-size: 36rpx; font-weight: 700; color: var(--green-deep); }
+.hero-text { margin-top: 12rpx; color: var(--sub); font-size: 28rpx; line-height: 1.7; }
+.points { margin-top: 28rpx; }
+.point { display: flex; align-items: center; margin-top: 16rpx; }
+.point-n { flex: none; width: 44rpx; height: 44rpx; margin-right: 16rpx; border-radius: 50%; background: var(--green); color: #fff; font-size: 24rpx; font-weight: 600; line-height: 44rpx; text-align: center; }
+.point-t { font-size: 28rpx; }
+.q-text { padding: 26rpx 0; line-height: 1.45; font-size: 30rpx; }
+.lead-title { font-weight: 600; }
+.lead-tag { margin-left: 16rpx; font-weight: 400; }
+.lead-note { margin-top: 8rpx; }
+.cta { margin-top: 24rpx; }
+.foot { margin-top: 20rpx; text-align: center; }

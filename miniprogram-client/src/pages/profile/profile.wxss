@@ -1,0 +1,7 @@
+.center { display: flex; flex-direction: column; align-items: center; padding: 32rpx 0 40rpx; }
+.avatar-btn { width: 176rpx; height: 176rpx; padding: 0; margin: 0 0 16rpx; border-radius: 50%; background: transparent; line-height: 1; }
+.avatar-btn::after { border: none; }
+.avatar { width: 176rpx; height: 176rpx; border-radius: 50%; }
+.avatar-empty { display: flex; align-items: center; justify-content: center; background: var(--green-soft); color: var(--green-deep); font-size: 30rpx; }
+.tick { color: var(--green); font-size: 36rpx; font-weight: 700; }
+.save { margin-top: 56rpx; }

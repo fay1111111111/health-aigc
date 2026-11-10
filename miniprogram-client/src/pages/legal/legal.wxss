@@ -1,0 +1,4 @@
+.body { margin-top: 36rpx; }
+.sec + .sec { margin-top: 36rpx; }
+.sec-h { font-weight: 600; font-size: 30rpx; }
+.sec-p { margin-top: 10rpx; color: var(--sub); font-size: 28rpx; line-height: 1.75; }

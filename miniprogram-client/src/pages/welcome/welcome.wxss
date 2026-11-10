@@ -1,0 +1,21 @@
+.top { padding: 40rpx 8rpx 0; }
+.title { margin-top: 56rpx; }
+.roles { display: flex; flex-direction: column; }
+.role { position: relative; margin-bottom: 16rpx; padding: 28rpx 96rpx 28rpx 32rpx; background: var(--card); border-radius: 28rpx; border: 3rpx solid transparent; }
+.role-on { border-color: var(--green); background: var(--green-mist); }
+.role-name { font-size: 32rpx; font-weight: 600; }
+.role-desc { margin-top: 4rpx; color: var(--sub); font-size: 26rpx; }
+.check { position: absolute; right: 32rpx; top: 50%; margin-top: -24rpx; width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; color: var(--green); font-weight: 700; font-size: 34rpx; }
+
+.avatar-btn { flex: none; width: 88rpx; height: 88rpx; padding: 0; margin: 16rpx 24rpx 16rpx 0; border-radius: 50%; background: transparent; line-height: 1; }
+.avatar-btn::after { border: none; }
+.avatar-img { width: 88rpx; height: 88rpx; border-radius: 50%; }
+.avatar-empty { display: flex; align-items: center; justify-content: center; background: var(--green-soft); color: var(--green-deep); font-size: 24rpx; }
+.nick { flex: 1; height: 88rpx; font-size: 32rpx; }
+
+.agree { display: flex; align-items: flex-start; margin: 44rpx 8rpx 32rpx; }
+.box { flex: none; width: 40rpx; height: 40rpx; margin: 4rpx 16rpx 0 0; border-radius: 50%; border: 3rpx solid #C7C7CC; box-sizing: border-box; color: #fff; font-size: 24rpx; line-height: 34rpx; text-align: center; }
+.box-on { background: var(--green); border-color: var(--green); }
+.agree-text { color: var(--sub); font-size: 26rpx; line-height: 1.6; }
+.link { color: var(--green-deep); }
+.tip { margin: 24rpx 8rpx 0; text-align: center; }

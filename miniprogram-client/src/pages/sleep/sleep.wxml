@@ -1,0 +1,52 @@
+<view class="page safe-bottom">
+  <view class="large-title">昨晚睡得怎么样</view>
+  <view class="subtitle">只是给自己看的记录，不用追求“标准答案”。</view>
+
+  <view class="card form">
+    <view class="row">
+      <text class="row-label">醒来的日期</text>
+      <picker mode="date" value="{{day}}" end="{{today}}" bindchange="pickDay"><view class="pick">{{day}}</view></picker>
+    </view>
+    <view class="row">
+      <text class="row-label">上床时间</text>
+      <picker mode="time" value="{{bedtime}}" bindchange="pickBed"><view class="pick">{{bedtime}}</view></picker>
+    </view>
+    <view class="row">
+      <text class="row-label">起床时间</text>
+      <picker mode="time" value="{{wakeTime}}" bindchange="pickWake"><view class="pick">{{wakeTime}}</view></picker>
+    </view>
+  </view>
+
+  <view class="card card-pad block">
+    <view class="q">整体感觉</view>
+    <view class="scale">
+      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{quality === item ? 'scale-on' : ''}}" data-v="{{item}}" bindtap="pickQuality">{{item}}</view>
+    </view>
+    <view class="scale-ends"><text>很不好</text><text>很好</text></view>
+  </view>
+
+  <view class="card block">
+    <view class="field">
+      <view class="field-label">想记一笔的（选填）</view>
+      <textarea class="field-area" value="{{note}}" bindinput="onNote" placeholder="例如：睡前喝了茶、半夜醒了一次" placeholder-class="placeholder" maxlength="300" />
+    </view>
+  </view>
+
+  <view class="btn save {{saving ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="save">{{saving ? '保存中…' : '保存'}}</view>
+  <view class="note tip">长期睡得很差，或白天明显受影响，请及时就医。</view>
+
+  <block wx:if="{{records.length}}">
+    <view class="section-label">最近的记录</view>
+    <view class="card">
+      <view wx:for="{{records}}" wx:key="id" class="rec" data-id="{{item.id}}" bindlongpress="remove">
+        <view class="rec-main">
+          <view class="rec-day">{{item.day}}</view>
+          <view class="rec-sub">{{item.bedtime}} – {{item.wake_time}} · {{item.durationText}}</view>
+          <view wx:if="{{item.note}}" class="rec-note">{{item.note}}</view>
+        </view>
+        <view class="rec-q">{{item.quality}}<text class="rec-q-unit">分</text></view>
+      </view>
+    </view>
+    <view class="note tip">长按一条记录可以删除</view>
+  </block>
+</view>

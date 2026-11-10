@@ -1,0 +1,45 @@
+<view class="page safe-bottom">
+  <view class="segment">
+    <view wx:for="{{kinds}}" wx:key="id" class="segment-item {{kind === item.id ? 'segment-on' : ''}}" data-id="{{item.id}}" bindtap="pickKind">{{item.name}}</view>
+  </view>
+  <view class="subtitle lead">{{hint}}</view>
+
+  <view class="card card-pad block">
+    <view class="q">身体放松的程度</view>
+    <view class="scale">
+      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{relax === item ? 'scale-on' : ''}}" data-k="relax" data-v="{{item}}" bindtap="pickScore">{{item}}</view>
+    </view>
+    <view class="scale-ends"><text>很紧绷</text><text>很放松</text></view>
+  </view>
+
+  <view class="card card-pad block">
+    <view class="q">{{sleepQuestion}}</view>
+    <view class="scale">
+      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{sleep === item ? 'scale-on' : ''}}" data-k="sleep" data-v="{{item}}" bindtap="pickScore">{{item}}</view>
+    </view>
+    <view class="scale-ends"><text>很不好</text><text>很好</text></view>
+  </view>
+
+  <view class="card block">
+    <view class="field">
+      <view class="field-label">想补充的感受（选填）</view>
+      <textarea class="field-area" value="{{note}}" bindinput="onNote" placeholder="想到什么写什么，没有也可以不写" placeholder-class="placeholder" maxlength="300" />
+    </view>
+  </view>
+
+  <view class="btn save {{saving ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="save">{{saving ? '提交中…' : '提交'}}</view>
+  <view class="note tip">如有持续不适，请及时联系我们，必要时就医。</view>
+
+  <block wx:if="{{records.length}}">
+    <view class="section-label">我的自评</view>
+    <view class="card">
+      <view wx:for="{{records}}" wx:key="id" class="rec">
+        <view class="rec-main">
+          <view class="rec-day">{{item.kindName}}<text class="rec-time">{{item.time}}</text></view>
+          <view class="rec-sub">放松 {{item.relax}} 分 · 睡眠 {{item.sleep}} 分</view>
+          <view wx:if="{{item.note}}" class="rec-note">{{item.note}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

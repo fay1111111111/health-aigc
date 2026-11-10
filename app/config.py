@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     # 实测（text-embedding-v3）：0.94 以上是同一知识点；0.85～0.88 是换了说法的重复；0.80 左右只是部分重叠
     dedup_similarity: float = 0.85
 
+    # 对外小程序（药王山沁养）：AppID 和密钥在微信公众平台「开发管理」里查看，只写在服务器 .env
+    wx_appid: str = ""
+    wx_secret: str = ""
+    wx_dev_login: bool = False  # 只在本地联调时打开：没配置 AppID 也能登录测试账号
+    client_session_days: int = 30
+    upload_dir: Path = ROOT / "uploads"  # 用户头像
+
     products_dir: Path = ROOT / "products"
     channels_dir: Path = ROOT / "channels"
     compliance_dir: Path = ROOT / "compliance"

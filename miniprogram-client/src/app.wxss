@@ -1,0 +1,83 @@
+/* 药王山沁养 · 全局样式
+   方向：iOS 风格（大留白、圆角卡片、细分隔线、系统字体），主色是安静的绿色。 */
+page {
+  --green: #2F9E77;
+  --green-deep: #1F7A5A;
+  --green-soft: #E4F3EB;
+  --green-mist: #F0F8F3;
+  --bg: #F4F7F5;
+  --card: #FFFFFF;
+  --text: #1C1C1E;
+  --sub: #6E6E73;
+  --hint: #A1A1A6;
+  --line: rgba(60, 60, 67, 0.1);
+  --warn: #C2562F;
+  --warn-soft: #FDF1EA;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 30rpx;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { padding: 24rpx 32rpx 64rpx; }
+
+/* 大标题 */
+.large-title { font-size: 56rpx; font-weight: 700; letter-spacing: 1rpx; line-height: 1.2; }
+.subtitle { margin-top: 12rpx; color: var(--sub); font-size: 28rpx; }
+
+/* 分组标题 + 卡片 */
+.section-label { margin: 44rpx 8rpx 16rpx; color: var(--sub); font-size: 26rpx; }
+.card { background: var(--card); border-radius: 28rpx; overflow: hidden; }
+.card-pad { padding: 32rpx; }
+
+/* iOS 列表行 */
+.row { display: flex; align-items: center; min-height: 104rpx; padding: 0 32rpx; position: relative; }
+.row + .row::before { content: ""; position: absolute; left: 32rpx; right: 0; top: 0; height: 1px; background: var(--line); transform: scaleY(0.5); }
+.row-label { flex: 1; font-size: 32rpx; }
+.row-value { color: var(--sub); font-size: 30rpx; max-width: 380rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-arrow { margin-left: 12rpx; color: #C7C7CC; font-size: 40rpx; line-height: 1; }
+.row-hover { background: rgba(0, 0, 0, 0.04); }
+.row-danger .row-label { color: #D9463E; }
+
+/* 按钮 */
+.btn { display: flex; align-items: center; justify-content: center; height: 100rpx; border-radius: 28rpx; font-size: 34rpx; font-weight: 600; background: var(--green); color: #fff; }
+.btn::after { border: none; }
+.btn-hover { opacity: 0.8; }
+.btn-ghost { background: var(--green-soft); color: var(--green-deep); }
+.btn-disabled { background: #D9E5DE; color: #fff; }
+.btn-text { color: var(--green-deep); font-size: 30rpx; padding: 20rpx; text-align: center; }
+
+/* 表单 */
+.field { padding: 26rpx 32rpx; position: relative; }
+.field + .field::before { content: ""; position: absolute; left: 32rpx; right: 0; top: 0; height: 1px; background: var(--line); transform: scaleY(0.5); }
+.field-label { color: var(--sub); font-size: 26rpx; margin-bottom: 10rpx; }
+.field-input { font-size: 32rpx; min-height: 48rpx; }
+.field-area { width: 100%; height: 160rpx; font-size: 32rpx; line-height: 1.5; }
+.placeholder { color: var(--hint); }
+
+/* 分段选择 */
+.segment { display: flex; padding: 6rpx; background: rgba(118, 118, 128, 0.12); border-radius: 20rpx; }
+.segment-item { flex: 1; height: 68rpx; line-height: 68rpx; text-align: center; font-size: 28rpx; color: var(--text); border-radius: 16rpx; }
+.segment-on { background: #fff; font-weight: 600; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08); }
+
+/* 1-5 分 */
+.scale { display: flex; justify-content: space-between; margin-top: 16rpx; }
+.scale-dot { width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--green-mist); color: var(--green-deep); display: flex; align-items: center; justify-content: center; font-size: 34rpx; font-weight: 600; }
+.scale-on { background: var(--green); color: #fff; }
+.scale-ends { display: flex; justify-content: space-between; margin-top: 12rpx; color: var(--hint); font-size: 24rpx; }
+
+.tag { display: inline-block; padding: 4rpx 16rpx; border-radius: 999rpx; background: var(--green-soft); color: var(--green-deep); font-size: 22rpx; }
+.note { color: var(--hint); font-size: 24rpx; line-height: 1.6; }
+.empty { padding: 80rpx 0; text-align: center; color: var(--hint); font-size: 28rpx; }
+.safe-bottom { padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); }
+
+/* 品牌标：一轮月亮落在叶子上 */
+.orb { position: relative; width: 144rpx; height: 144rpx; border-radius: 50%; background: linear-gradient(150deg, #7CCFA8, #2F9E77); }
+.orb::before { content: ""; position: absolute; top: -18rpx; right: -18rpx; bottom: -18rpx; left: -18rpx; border-radius: 50%; background: rgba(47, 158, 119, 0.14); animation: breathe 5s ease-in-out infinite; }
+.orb::after { content: ""; position: absolute; left: 34rpx; top: 30rpx; width: 76rpx; height: 76rpx; border-radius: 50%; box-shadow: -18rpx 12rpx 0 0 #fff; opacity: 0.95; }
+.orb-small { width: 72rpx; height: 72rpx; }
+.orb-small::before { top: -8rpx; right: -8rpx; bottom: -8rpx; left: -8rpx; }
+.orb-small::after { left: 18rpx; top: 14rpx; width: 38rpx; height: 38rpx; box-shadow: -9rpx 6rpx 0 0 #fff; }
+@keyframes breathe { 0%, 100% { transform: scale(0.92); opacity: 0.5; } 50% { transform: scale(1.12); opacity: 1; } }

@@ -1,0 +1,10 @@
+<view class="page safe-bottom">
+  <view class="large-title">{{title}}</view>
+  <view class="subtitle">草稿 · 上线前需由运营主体和法务确认</view>
+  <view class="card card-pad body">
+    <view wx:for="{{sections}}" wx:key="h" class="sec">
+      <view class="sec-h">{{item.h}}</view>
+      <view class="sec-p">{{item.p}}</view>
+    </view>
+  </view>
+</view>

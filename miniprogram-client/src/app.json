@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/chat/chat",
+    "pages/partner/partner",
+    "pages/me/me",
+    "pages/welcome/welcome",
+    "pages/profile/profile",
+    "pages/sleep/sleep",
+    "pages/assess/assess",
+    "pages/lead/lead",
+    "pages/legal/legal"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#F4F7F5",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "药王山沁养",
+    "backgroundColor": "#F4F7F5",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8E8E93",
+    "selectedColor": "#2F9E77",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/chat/chat", "text": "问答", "iconPath": "images/tab-chat.png", "selectedIconPath": "images/tab-chat-on.png" },
+      { "pagePath": "pages/partner/partner", "text": "伙伴", "iconPath": "images/tab-partner.png", "selectedIconPath": "images/tab-partner-on.png" },
+      { "pagePath": "pages/me/me", "text": "我的", "iconPath": "images/tab-me.png", "selectedIconPath": "images/tab-me-on.png" }
+    ]
+  },
+  "networkTimeout": { "request": 20000, "uploadFile": 30000 },
+  "__usePrivacyCheck__": true,
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

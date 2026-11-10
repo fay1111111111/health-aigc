@@ -1,0 +1,5 @@
+.form { margin-top: 32rpx; }
+.agree { display: flex; align-items: flex-start; margin: 40rpx 8rpx 32rpx; }
+.box { flex: none; width: 40rpx; height: 40rpx; margin: 4rpx 16rpx 0 0; border-radius: 50%; border: 3rpx solid #C7C7CC; box-sizing: border-box; color: #fff; font-size: 24rpx; line-height: 34rpx; text-align: center; }
+.box-on { background: var(--green); border-color: var(--green); }
+.agree-text { color: var(--sub); font-size: 26rpx; line-height: 1.6; }
