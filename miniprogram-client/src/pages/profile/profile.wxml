@@ -22,5 +22,5 @@
     </view>
   </view>
 
-  <view class="btn save {{saving ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="save">{{saving ? '保存中…' : '保存'}}</view>
+  <view class="btn save press {{saving ? 'btn-disabled' : ''}}" hover-class="press-hover" bindtap="save">{{saving ? '保存中…' : '保存'}}</view>
 </view>

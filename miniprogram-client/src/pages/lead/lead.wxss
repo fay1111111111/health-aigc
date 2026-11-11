@@ -1,4 +1,9 @@
+.head { display: flex; align-items: center; padding: 8rpx 8rpx 0; }
+.head-ico { width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--green-soft); }
+.head-ico .ico { width: 52rpx; height: 52rpx; }
+.head-title { font-size: 38rpx; font-weight: 700; margin-bottom: 4rpx; }
 .form { margin-top: 32rpx; }
+.label-ico { width: 30rpx; height: 30rpx; margin-right: 10rpx; vertical-align: -5rpx; }
 .agree { display: flex; align-items: flex-start; margin: 40rpx 8rpx 32rpx; }
 .box { flex: none; width: 40rpx; height: 40rpx; margin: 4rpx 16rpx 0 0; border-radius: 50%; border: 3rpx solid #C7C7CC; box-sizing: border-box; color: #fff; font-size: 24rpx; line-height: 34rpx; text-align: center; }
 .box-on { background: var(--green); border-color: var(--green); }

@@ -1,13 +1,13 @@
 <view class="page safe-bottom">
   <view class="segment">
-    <view wx:for="{{kinds}}" wx:key="id" class="segment-item {{kind === item.id ? 'segment-on' : ''}}" data-id="{{item.id}}" bindtap="pickKind">{{item.name}}</view>
+    <view wx:for="{{kinds}}" wx:key="id" class="segment-item {{kind === item.id ? 'segment-on' : ''}}" data-id="{{item.id}}" bindtap="pickKind"><image class="seg-ico" src="/images/icons/{{item.icon}}.png" />{{item.name}}</view>
   </view>
   <view class="subtitle lead">{{hint}}</view>
 
   <view class="card card-pad block">
     <view class="q">身体放松的程度</view>
     <view class="scale">
-      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{relax === item ? 'scale-on' : ''}}" data-k="relax" data-v="{{item}}" bindtap="pickScore">{{item}}</view>
+      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{relax === item ? 'scale-on' : ''}}" data-k="relax" data-v="{{item}}" bindtap="pickScore"><image class="scale-face" src="/images/icons/face-{{item}}{{relax === item ? '-on' : ''}}.png" /></view>
     </view>
     <view class="scale-ends"><text>很紧绷</text><text>很放松</text></view>
   </view>
@@ -15,7 +15,7 @@
   <view class="card card-pad block">
     <view class="q">{{sleepQuestion}}</view>
     <view class="scale">
-      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{sleep === item ? 'scale-on' : ''}}" data-k="sleep" data-v="{{item}}" bindtap="pickScore">{{item}}</view>
+      <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="scale-dot {{sleep === item ? 'scale-on' : ''}}" data-k="sleep" data-v="{{item}}" bindtap="pickScore"><image class="scale-face" src="/images/icons/face-{{item}}{{sleep === item ? '-on' : ''}}.png" /></view>
     </view>
     <view class="scale-ends"><text>很不好</text><text>很好</text></view>
   </view>
@@ -27,7 +27,7 @@
     </view>
   </view>
 
-  <view class="btn save {{saving ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="save">{{saving ? '提交中…' : '提交'}}</view>
+  <view class="btn save press {{saving ? 'btn-disabled' : ''}}" hover-class="press-hover" bindtap="save">{{saving ? '提交中…' : '提交'}}</view>
   <view class="note tip">如有持续不适，请及时联系我们，必要时就医。</view>
 
   <block wx:if="{{records.length}}">

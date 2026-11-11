@@ -2,9 +2,9 @@ const api = require('../../utils/api')
 const { toast, shortTime, withHealthConsent } = require('../../utils/util')
 
 const KINDS = [
-  { id: 'before', name: '体验前', hint: '开始之前，记一下此刻的状态。', sleepQuestion: '最近几天睡得怎么样' },
-  { id: 'after', name: '体验后', hint: '做完之后，感受如实写就好，没有明显变化也很正常。', sleepQuestion: '此刻想睡、能安静下来的程度' },
-  { id: 'next_day', name: '次日回访', hint: '体验后的第二天，回看一下昨晚。', sleepQuestion: '昨晚睡得怎么样' }
+  { id: 'before', icon: 'clock', name: '体验前', hint: '开始之前，记一下此刻的状态。', sleepQuestion: '最近几天睡得怎么样' },
+  { id: 'after', icon: 'check', name: '体验后', hint: '做完之后，感受如实写就好，没有明显变化也很正常。', sleepQuestion: '此刻想睡、能安静下来的程度' },
+  { id: 'next_day', icon: 'sunrise', name: '次日回访', hint: '体验后的第二天，回看一下昨晚。', sleepQuestion: '昨晚睡得怎么样' }
 ]
 const KIND_NAMES = KINDS.reduce((map, k) => { map[k.id] = k.name; return map }, {})
 

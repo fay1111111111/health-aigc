@@ -11,15 +11,15 @@
     "pages/legal/legal"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#F4F7F5",
+    "navigationBarBackgroundColor": "#F5F6F1",
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "药王山沁养",
-    "backgroundColor": "#F4F7F5",
+    "backgroundColor": "#F5F6F1",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
     "color": "#8E8E93",
-    "selectedColor": "#2F9E77",
+    "selectedColor": "#528977",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [

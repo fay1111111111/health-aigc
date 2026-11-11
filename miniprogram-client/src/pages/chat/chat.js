@@ -3,6 +3,12 @@ const { toast } = require('../../utils/util')
 
 const PAGE_SIZE = 4 // 每个分类一次展示几条常见问题
 let seq = 0
+const CAT_ICONS = { learn: 'leaf', experience: 'lotus', aftercare: 'heart' }
+
+function isNight() {
+  const h = new Date().getHours()
+  return h >= 18 || h < 5 // 和问候语的分界一致：18 点后「晚上好」，5 点前「夜深了」
+}
 
 function greeting() {
   const h = new Date().getHours()
@@ -16,10 +22,12 @@ function greeting() {
 Page({
   data: {
     greeting: greeting(),
+    isNight: isNight(),
     categories: [],
     activeCat: 0,
     offset: 0,
     visibleQuestions: [],
+    activeIcon: 'leaf',
     canShuffle: false,
     messages: [],
     input: '',
@@ -33,7 +41,7 @@ Page({
   },
 
   onShow() {
-    this.setData({ greeting: greeting() })
+    this.setData({ greeting: greeting(), isNight: isNight() })
     getApp().ensureUser().then((user) => {
       if (!user.registered) {
         wx.reLaunch({ url: '/pages/welcome/welcome' })
@@ -65,7 +73,8 @@ Page({
           helpful: m.helpful, related: []
         })
       })
-      this.setData({ categories: home.categories, messages, loadError: '' })
+      const categories = home.categories.map((c) => Object.assign({ icon: CAT_ICONS[c.id] || 'leaf' }, c))
+      this.setData({ categories, messages, loadError: '' })
       this.showQuestions(0, 0)
       if (messages.length) this.scrollDown()
     })
@@ -81,10 +90,11 @@ Page({
   },
 
   showQuestions(activeCat, offset) {
-    const all = (this.data.categories[activeCat] || {}).questions || []
+    const cat = this.data.categories[activeCat] || {}
+    const all = cat.questions || []
     const start = offset >= all.length ? 0 : offset
     this.setData({
-      activeCat, offset: start,
+      activeCat, offset: start, activeIcon: cat.icon || 'leaf',
       visibleQuestions: all.slice(start, start + PAGE_SIZE),
       canShuffle: all.length > PAGE_SIZE
     })

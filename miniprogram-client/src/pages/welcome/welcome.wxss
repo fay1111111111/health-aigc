@@ -1,7 +1,12 @@
-.top { padding: 40rpx 8rpx 0; }
+.wave { position: absolute; left: 0; top: 0; width: 100%; opacity: 0.9; transform: rotate(180deg); }
+.top { position: relative; padding: 56rpx 8rpx 0; }
 .title { margin-top: 56rpx; }
 .roles { display: flex; flex-direction: column; }
-.role { position: relative; margin-bottom: 16rpx; padding: 28rpx 96rpx 28rpx 32rpx; background: var(--card); border-radius: 28rpx; border: 3rpx solid transparent; }
+.role { position: relative; display: flex; align-items: center; margin-bottom: 16rpx; padding: 26rpx 96rpx 26rpx 28rpx; background: var(--card); border-radius: 28rpx; border: 3rpx solid transparent; transition: background 0.2s, border-color 0.2s; }
+.role-ico { width: 84rpx; height: 84rpx; border-radius: 50%; }
+.role-ico .ico { width: 46rpx; height: 46rpx; }
+.role-on .role-ico { background: #fff; }
+.role-main { flex: 1; min-width: 0; }
 .role-on { border-color: var(--green); background: var(--green-mist); }
 .role-name { font-size: 32rpx; font-weight: 600; }
 .role-desc { margin-top: 4rpx; color: var(--sub); font-size: 26rpx; }

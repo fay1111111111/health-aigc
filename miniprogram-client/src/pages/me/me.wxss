@@ -1,16 +1,20 @@
 .head { display: flex; align-items: center; padding: 24rpx 8rpx; border-radius: 28rpx; }
 .avatar { flex: none; width: 128rpx; height: 128rpx; border-radius: 50%; }
-.avatar-empty { display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, #7CCFA8, #2F9E77); color: #fff; font-size: 52rpx; font-weight: 600; }
+.avatar-empty { display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, #86B5A3, #528977); color: #fff; font-size: 52rpx; font-weight: 600; }
 .head-main { flex: 1; margin-left: 28rpx; min-width: 0; }
 .name { font-size: 44rpx; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .role { margin-top: 4rpx; color: var(--sub); font-size: 28rpx; }
 
+.sleep-head { display: flex; align-items: center; margin-bottom: 20rpx; }
+.sleep-head .ico-wrap { margin-right: 16rpx; animation: floaty 6s ease-in-out infinite; }
+.sleep-title { font-weight: 600; }
 .sum-num { font-size: 56rpx; font-weight: 700; color: var(--green-deep); line-height: 1.2; }
 .sum-label { color: var(--sub); font-size: 26rpx; }
 .bars { display: flex; align-items: flex-end; margin-top: 28rpx; }
 .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
 .bar-track { display: flex; align-items: flex-end; width: 28rpx; height: 140rpx; }
-.bar { width: 100%; min-height: 8rpx; border-radius: 14rpx; background: var(--green); }
+.bar { width: 100%; min-height: 8rpx; border-radius: 14rpx; background: var(--green); transform-origin: bottom; animation: grow 0.6s ease-out backwards; }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .bar-day { margin-top: 10rpx; color: var(--hint); font-size: 22rpx; }
 .invite-title { font-size: 34rpx; font-weight: 600; margin-bottom: 8rpx; }
 .card-link { margin-top: 24rpx; color: var(--green-deep); font-size: 28rpx; font-weight: 600; }

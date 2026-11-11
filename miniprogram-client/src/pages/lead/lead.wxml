@@ -1,38 +1,41 @@
 <view class="page safe-bottom">
-  <view class="segment">
-    <view class="segment-item {{interest === 'learn' ? 'segment-on' : ''}}" data-v="learn" bindtap="pickInterest">想学习</view>
-    <view class="segment-item {{interest === 'cooperate' ? 'segment-on' : ''}}" data-v="cooperate" bindtap="pickInterest">想谈合作</view>
+  <view class="head">
+    <view class="ico-wrap head-ico"><image class="ico" src="/images/icons/cap.png" /></view>
+    <view>
+      <view class="head-title">留下学习意向</view>
+      <view class="note">课程安排确定后，我们会联系你。登记不收费，也不代表报名成功。</view>
+    </view>
   </view>
 
   <view class="card form">
     <view class="field">
-      <view class="field-label">怎么称呼你</view>
+      <view class="field-label"><image class="label-ico" src="/images/icons/person.png" />怎么称呼你</view>
       <input class="field-input" value="{{name}}" data-k="name" bindinput="onField" placeholder="例如：陈老师" placeholder-class="placeholder" maxlength="32" />
     </view>
     <view class="field">
-      <view class="field-label">你所在的机构类型</view>
+      <view class="field-label"><image class="label-ico" src="/images/icons/building.png" />你所在的机构类型</view>
       <picker mode="selector" range="{{orgTypes}}" bindchange="pickOrg">
         <view class="field-input {{orgType ? '' : 'placeholder'}}">{{orgType || '请选择'}}</view>
       </picker>
     </view>
     <view class="field">
-      <view class="field-label">所在城市（选填）</view>
+      <view class="field-label"><image class="label-ico" src="/images/icons/pin.png" />所在城市（选填）</view>
       <input class="field-input" value="{{city}}" data-k="city" bindinput="onField" placeholder="例如：广州" placeholder-class="placeholder" maxlength="32" />
     </view>
     <view class="field">
-      <view class="field-label">方便联系你的方式</view>
+      <view class="field-label"><image class="label-ico" src="/images/icons/phone.png" />方便联系你的方式</view>
       <input class="field-input" value="{{contact}}" data-k="contact" bindinput="onField" placeholder="微信号或手机号" placeholder-class="placeholder" maxlength="64" />
     </view>
     <view class="field">
-      <view class="field-label">想让我们先了解的情况（选填）</view>
-      <textarea class="field-area" value="{{note}}" data-k="note" bindinput="onField" placeholder="{{interest === 'learn' ? '例如：目前做什么工作、想学到什么程度' : '例如：机构规模、希望的合作方式'}}" placeholder-class="placeholder" maxlength="500" />
+      <view class="field-label"><image class="label-ico" src="/images/icons/pencil.png" />想让我们先了解的情况（选填）</view>
+      <textarea class="field-area" value="{{note}}" data-k="note" bindinput="onField" placeholder="例如：目前做什么工作、想学到什么程度" placeholder-class="placeholder" maxlength="500" />
     </view>
   </view>
 
   <view class="agree" bindtap="toggleAgree">
     <view class="box {{agree ? 'box-on' : ''}}">{{agree ? '✓' : ''}}</view>
-    <view class="agree-text">同意药王山沁养使用以上信息，就学习或合作事宜联系我</view>
+    <view class="agree-text">同意药王山沁养使用以上信息，就学习事宜联系我</view>
   </view>
 
-  <view class="btn {{submitting ? 'btn-disabled' : ''}}" hover-class="btn-hover" bindtap="submit">{{submitting ? '提交中…' : '提交'}}</view>
+  <view class="btn press {{submitting ? 'btn-disabled' : ''}}" hover-class="press-hover" bindtap="submit">{{submitting ? '提交中…' : '提交'}}</view>
 </view>

@@ -3,7 +3,6 @@ const { toast } = require('../../utils/util')
 
 Page({
   data: {
-    interest: 'learn',
     orgTypes: ['康复理疗机构', '养生馆 / 美容院', '按摩推拿店', '心理咨询工作室', '医疗机构从业者', '酒店 / 民宿', '个人学习', '其他'],
     orgType: '',
     name: '',
@@ -12,10 +11,6 @@ Page({
     note: '',
     agree: false,
     submitting: false
-  },
-
-  pickInterest(e) {
-    this.setData({ interest: e.currentTarget.dataset.v })
   },
 
   pickOrg(e) {
@@ -40,7 +35,7 @@ Page({
     this.setData({ submitting: true })
     api.post('/api/c/leads', {
       name: d.name.trim(), org_type: d.orgType, city: d.city.trim(), contact: d.contact.trim(),
-      interest: d.interest, note: d.note.trim(), agree_contact: true
+      interest: 'learn', note: d.note.trim(), agree_contact: true
     }).then(() => {
       wx.showToast({ title: '已收到', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 900)

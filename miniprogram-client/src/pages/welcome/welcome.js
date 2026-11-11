@@ -4,9 +4,9 @@ const { toast } = require('../../utils/util')
 Page({
   data: {
     roles: [
-      { id: 'self', name: '为自己了解', desc: '想放松一下，或者睡前总是静不下来' },
-      { id: 'family', name: '为家人了解', desc: '想陪父母、孩子把睡眠习惯调好一点' },
-      { id: 'partner', name: '我是从业伙伴', desc: '在康复理疗、养生等一线工作，想了解学习' }
+      { id: 'self', icon: 'person', name: '为自己了解', desc: '想放松一下，或者睡前总是静不下来' },
+      { id: 'family', icon: 'home', name: '为家人了解', desc: '想陪父母、孩子把睡眠习惯调好一点' },
+      { id: 'partner', icon: 'cap', name: '我是从业伙伴', desc: '在康复理疗、养生等一线工作，想了解学习' }
     ],
     role: '',
     nickname: '',

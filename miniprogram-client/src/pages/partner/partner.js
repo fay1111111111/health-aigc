@@ -2,7 +2,6 @@ const api = require('../../utils/api')
 const { shortTime } = require('../../utils/util')
 
 const STATUS = { new: '待联系', contacted: '已联系', closed: '已结束' }
-const INTEREST = { learn: '想学习', cooperate: '想谈合作' }
 
 Page({
   data: { questions: [], lead: null, error: '' },
@@ -22,7 +21,6 @@ Page({
           questions: home.categories[0] ? home.categories[0].questions : [],
           lead: latest ? {
             statusText: STATUS[latest.status] || '待联系',
-            interestText: INTEREST[latest.interest] || '',
             time: shortTime(latest.created_at)
           } : null
         })

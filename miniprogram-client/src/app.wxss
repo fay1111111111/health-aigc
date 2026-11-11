@@ -1,11 +1,12 @@
 /* 药王山沁养 · 全局样式
    方向：iOS 风格（大留白、圆角卡片、细分隔线、系统字体），主色是安静的绿色。 */
 page {
-  --green: #2F9E77;
-  --green-deep: #1F7A5A;
-  --green-soft: #E4F3EB;
-  --green-mist: #F0F8F3;
-  --bg: #F4F7F5;
+  --green: #528977;
+  --green-deep: #3B6F5E;
+  --green-soft: #E1EEE8;
+  --green-mist: #F0F6F2;
+  --cream: #FDF7EE;
+  --bg: #F5F6F1;
   --card: #FFFFFF;
   --text: #1C1C1E;
   --sub: #6E6E73;
@@ -46,7 +47,7 @@ page {
 .btn::after { border: none; }
 .btn-hover { opacity: 0.8; }
 .btn-ghost { background: var(--green-soft); color: var(--green-deep); }
-.btn-disabled { background: #D9E5DE; color: #fff; }
+.btn-disabled { background: #CFDFD7; color: #fff; }
 .btn-text { color: var(--green-deep); font-size: 30rpx; padding: 20rpx; text-align: center; }
 
 /* 表单 */
@@ -64,8 +65,9 @@ page {
 
 /* 1-5 分 */
 .scale { display: flex; justify-content: space-between; margin-top: 16rpx; }
-.scale-dot { width: 96rpx; height: 96rpx; border-radius: 50%; background: var(--green-mist); color: var(--green-deep); display: flex; align-items: center; justify-content: center; font-size: 34rpx; font-weight: 600; }
-.scale-on { background: var(--green); color: #fff; }
+.scale-dot { width: 100rpx; height: 100rpx; border-radius: 50%; background: var(--green-mist); display: flex; align-items: center; justify-content: center; transition: background 0.2s, transform 0.2s; }
+.scale-face { width: 64rpx; height: 64rpx; }
+.scale-on { background: var(--green); transform: scale(1.12); box-shadow: 0 8rpx 20rpx rgba(82, 137, 119, 0.35); animation: pop 0.3s ease-out; }
 .scale-ends { display: flex; justify-content: space-between; margin-top: 12rpx; color: var(--hint); font-size: 24rpx; }
 
 .tag { display: inline-block; padding: 4rpx 16rpx; border-radius: 999rpx; background: var(--green-soft); color: var(--green-deep); font-size: 22rpx; }
@@ -73,11 +75,27 @@ page {
 .empty { padding: 80rpx 0; text-align: center; color: var(--hint); font-size: 28rpx; }
 .safe-bottom { padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); }
 
-/* 品牌标：一轮月亮落在叶子上 */
-.orb { position: relative; width: 144rpx; height: 144rpx; border-radius: 50%; background: linear-gradient(150deg, #7CCFA8, #2F9E77); }
-.orb::before { content: ""; position: absolute; top: -18rpx; right: -18rpx; bottom: -18rpx; left: -18rpx; border-radius: 50%; background: rgba(47, 158, 119, 0.14); animation: breathe 5s ease-in-out infinite; }
-.orb::after { content: ""; position: absolute; left: 34rpx; top: 30rpx; width: 76rpx; height: 76rpx; border-radius: 50%; box-shadow: -18rpx 12rpx 0 0 #fff; opacity: 0.95; }
-.orb-small { width: 72rpx; height: 72rpx; }
-.orb-small::before { top: -8rpx; right: -8rpx; bottom: -8rpx; left: -8rpx; }
-.orb-small::after { left: 18rpx; top: 14rpx; width: 38rpx; height: 38rpx; box-shadow: -9rpx 6rpx 0 0 #fff; }
+/* 图标：放在浅绿色圆底上 */
+.ico { flex: none; width: 44rpx; height: 44rpx; }
+.ico-wrap { flex: none; display: flex; align-items: center; justify-content: center; width: 68rpx; height: 68rpx; margin-right: 24rpx; border-radius: 22rpx; background: var(--green-mist); }
+.ico-wrap .ico { width: 40rpx; height: 40rpx; }
+.seg-ico { width: 32rpx; height: 32rpx; margin-right: 8rpx; vertical-align: -6rpx; }
+
+/* logo：圆形，外面一圈慢慢呼吸的光晕 */
+.logo-wrap { position: relative; width: 152rpx; height: 152rpx; }
+.logo-wrap::before { content: ""; position: absolute; top: -18rpx; right: -18rpx; bottom: -18rpx; left: -18rpx; border-radius: 50%; background: rgba(82, 137, 119, 0.16); animation: breathe 5s ease-in-out infinite; }
+.logo { position: relative; display: block; width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 8rpx 28rpx rgba(59, 111, 94, 0.18); }
+.logo-small { width: 72rpx; height: 72rpx; }
+.logo-small::before { display: none; }
+.logo-small .logo { box-shadow: 0 2rpx 10rpx rgba(59, 111, 94, 0.18); }
+
+/* 动效 */
+.fade-up { opacity: 0; animation: fadeUp 0.45s ease-out forwards; }
+.press { transition: transform 0.12s; }
+.press-hover { transform: scale(0.97); }
 @keyframes breathe { 0%, 100% { transform: scale(0.92); opacity: 0.5; } 50% { transform: scale(1.12); opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20rpx); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(0.9); } 60% { transform: scale(1.2); } 100% { transform: scale(1.12); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes drift { from { transform: translateX(-40rpx); } to { transform: translateX(40rpx); } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10rpx); } }

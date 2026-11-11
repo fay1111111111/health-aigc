@@ -1,4 +1,8 @@
-.hero { margin-top: 36rpx; background: linear-gradient(160deg, #E4F3EB, #F6FBF8); }
+.hero { position: relative; margin-top: 36rpx; background: linear-gradient(160deg, #E1EEE8, #FDF7EE); }
+.hero-art { position: absolute; left: 0; bottom: 0; width: 100%; opacity: 0.55; }
+.hero-ico { position: relative; width: 88rpx; height: 88rpx; margin-bottom: 20rpx; border-radius: 50%; background: #fff; animation: floaty 6s ease-in-out infinite; }
+.hero-ico .ico { width: 50rpx; height: 50rpx; }
+.hero-title, .hero-text, .points { position: relative; }
 .hero-title { font-size: 36rpx; font-weight: 700; color: var(--green-deep); }
 .hero-text { margin-top: 12rpx; color: var(--sub); font-size: 28rpx; line-height: 1.7; }
 .points { margin-top: 28rpx; }
@@ -6,6 +10,8 @@
 .point-n { flex: none; width: 44rpx; height: 44rpx; margin-right: 16rpx; border-radius: 50%; background: var(--green); color: #fff; font-size: 24rpx; font-weight: 600; line-height: 44rpx; text-align: center; }
 .point-t { font-size: 28rpx; }
 .q-text { padding: 26rpx 0; line-height: 1.45; font-size: 30rpx; }
+.q-ico { width: 60rpx; height: 60rpx; border-radius: 50%; margin-right: 20rpx; }
+.q-ico .ico { width: 34rpx; height: 34rpx; }
 .lead-title { font-weight: 600; }
 .lead-tag { margin-left: 16rpx; font-weight: 400; }
 .lead-note { margin-top: 8rpx; }

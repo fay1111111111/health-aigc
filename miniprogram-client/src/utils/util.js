@@ -31,7 +31,7 @@ function duration(minutes) {
 function confirm(title, content, confirmText) {
   return new Promise((resolve) => {
     wx.showModal({
-      title, content, confirmText: confirmText || '确定', confirmColor: '#2F9E77',
+      title, content, confirmText: confirmText || '确定', confirmColor: '#528977',
       success: (res) => resolve(res.confirm),
       fail: () => resolve(false)
     })

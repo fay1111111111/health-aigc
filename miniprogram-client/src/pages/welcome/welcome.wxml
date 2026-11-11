@@ -1,6 +1,7 @@
 <view class="page safe-bottom">
+  <image class="wave" src="/images/wave.png" mode="widthFix" />
   <view class="top">
-    <view class="orb"></view>
+    <view class="logo-wrap"><image class="logo" src="/images/logo-round.png" /></view>
     <view class="large-title title">欢迎来到</view>
     <view class="large-title">药王山沁养</view>
     <view class="subtitle">一个可以慢慢问、慢慢了解颅骶放松和睡眠习惯的地方。</view>
@@ -8,9 +9,12 @@
 
   <view class="section-label">你是为谁而来？</view>
   <view class="roles">
-    <view wx:for="{{roles}}" wx:key="id" class="role {{role === item.id ? 'role-on' : ''}}" data-id="{{item.id}}" bindtap="pickRole">
-      <view class="role-name">{{item.name}}</view>
-      <view class="role-desc">{{item.desc}}</view>
+    <view wx:for="{{roles}}" wx:key="id" class="role fade-up {{role === item.id ? 'role-on' : ''}}" style="animation-delay: {{index * 90 + 100}}ms" data-id="{{item.id}}" bindtap="pickRole">
+      <view class="ico-wrap role-ico"><image class="ico" src="/images/icons/{{item.icon}}.png" /></view>
+      <view class="role-main">
+        <view class="role-name">{{item.name}}</view>
+        <view class="role-desc">{{item.desc}}</view>
+      </view>
       <view class="check">{{role === item.id ? '✓' : ''}}</view>
     </view>
   </view>
@@ -34,6 +38,6 @@
     </view>
   </view>
 
-  <view class="btn {{canSubmit ? '' : 'btn-disabled'}}" hover-class="{{canSubmit ? 'btn-hover' : ''}}" bindtap="submit">{{submitting ? '请稍候…' : '开始使用'}}</view>
+  <view class="btn press {{canSubmit ? '' : 'btn-disabled'}}" hover-class="{{canSubmit ? 'press-hover' : ''}}" bindtap="submit">{{submitting ? '请稍候…' : '开始使用'}}</view>
   <view class="note tip">使用微信身份登录，不需要手机号。本小程序提供的是放松与睡眠习惯方面的信息，不是医疗服务。</view>
 </view>

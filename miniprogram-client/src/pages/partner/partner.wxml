@@ -3,6 +3,8 @@
   <view class="subtitle">给在康复理疗、养生等一线工作的你：把服务做深，而不是多开一家店。</view>
 
   <view class="card card-pad hero">
+    <image class="hero-art" src="/images/wave.png" mode="widthFix" />
+    <view class="ico-wrap hero-ico"><image class="ico" src="/images/icons/cap.png" /></view>
     <view class="hero-title">颅骶放松 + 正念引导</view>
     <view class="hero-text">先聚焦睡眠与放松。学的是怎么接住客户、怎么说明边界、怎么把每一次服务记录下来。它不是医疗培训，也不处理疾病。</view>
     <view class="points">
@@ -15,7 +17,8 @@
   <view class="section-label">大家常问</view>
   <view wx:if="{{error}}" class="card card-pad empty">{{error}}<view class="btn-text" bindtap="load">重新加载</view></view>
   <view wx:else class="card">
-    <view wx:for="{{questions}}" wx:key="code" class="row" hover-class="row-hover" data-code="{{item.code}}" data-question="{{item.question}}" bindtap="ask">
+    <view wx:for="{{questions}}" wx:key="code" class="row fade-up" style="animation-delay: {{index * 60}}ms" hover-class="row-hover" data-code="{{item.code}}" data-question="{{item.question}}" bindtap="ask">
+      <view class="ico-wrap q-ico"><image class="ico" src="/images/icons/bubble.png" /></view>
       <text class="row-label q-text">{{item.question}}</text>
       <text class="row-arrow">›</text>
     </view>
@@ -24,8 +27,8 @@
   <view class="section-label">想进一步了解</view>
   <view wx:if="{{lead}}" class="card card-pad">
     <view class="lead-title">已收到你的登记<text class="tag lead-tag">{{lead.statusText}}</text></view>
-    <view class="note lead-note">{{lead.time}} · {{lead.interestText}}。课程和合作安排确定后，我们会用你留下的方式联系你。</view>
+    <view class="note lead-note">{{lead.time}} 登记。课程安排确定后，我们会用你留下的方式联系你。</view>
   </view>
-  <view class="btn cta {{lead ? 'btn-ghost' : ''}}" hover-class="btn-hover" bindtap="openLead">{{lead ? '再登记一条' : '登记学习 / 合作意向'}}</view>
+  <view class="btn cta press {{lead ? 'btn-ghost' : ''}}" hover-class="press-hover" bindtap="openLead">{{lead ? '再登记一条' : '登记学习意向'}}</view>
   <view class="note foot">登记不收取任何费用，也不代表报名成功。</view>
 </view>
