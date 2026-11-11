@@ -4,13 +4,23 @@ import pytest
 from conftest import h
 
 from app import client_api, db, main, qa
+from app.config import get_settings
 from app.client_models import QAItem
 
 
 @pytest.fixture
-def cclient(client):
+def cclient(client, fake_llm, monkeypatch):
     main.app.dependency_overrides[client_api.openid_resolver] = lambda: (lambda code: "openid-" + code)
+    main.app.dependency_overrides[client_api.get_llm] = lambda: fake_llm
+    # 默认按「只做问答匹配」测；大模型相关的用例自己打开
+    monkeypatch.setattr(get_settings(), "chat_mode", "retrieval")
     return client
+
+
+@pytest.fixture
+def ai(cclient, fake_llm, monkeypatch):
+    monkeypatch.setattr(get_settings(), "chat_mode", "llm")
+    return fake_llm
 
 
 def login(c, code="a", register=True):
@@ -165,7 +175,6 @@ def test_admin_edits_qa_and_draft_is_hidden(cclient, tokens):
 
 
 def test_avatar_upload_and_delete_account(cclient, tmp_path, monkeypatch):
-    from app.config import get_settings
     monkeypatch.setattr(get_settings(), "upload_dir", tmp_path)
     token = login(cclient)
     bad = cclient.post("/api/c/me/avatar", files={"file": ("a.txt", b"hi", "text/plain")}, headers=h(token))
@@ -177,3 +186,70 @@ def test_avatar_upload_and_delete_account(cclient, tmp_path, monkeypatch):
     assert cclient.delete("/api/c/me", headers=h(token)).status_code == 200
     assert list((tmp_path / "avatars").iterdir()) == []
     assert cclient.get("/api/c/me", headers=h(token)).status_code == 401
+
+
+# ---------- 大模型对话 ----------
+
+def test_ai_answers_from_vetted_material(cclient, ai):
+    token = login(cclient)
+    ai.replies = ["颅骶放松是很轻柔的手部接触，不按不揉，重点是让人慢慢安静下来。"]
+    out = ask(cclient, token, "和按摩有啥不一样")
+    assert out["kind"] == "ai" and out["ai"] is True and out["answer"].startswith("颅骶放松是很轻柔")
+    system, user = ai.calls[0][0]["content"], ai.calls[0][1]["content"]
+    assert "只根据下面「资料」" in system and "不是医疗服务" in system
+    assert "[审核过的问答]" in user and "和按摩有啥不一样" in user
+    assert out["related"]
+
+
+def test_ai_not_used_for_risk_preset_or_sensitive_questions(cclient, ai):
+    token = login(cclient)
+    assert ask(cclient, token, "我不想活了")["kind"] == "risk"
+    assert ask(cclient, token, "随便", code="体验-06")["kind"] == "answer"
+    # 孕期、高血压这类中高风险问题，原样给审核过的回答
+    out = ask(cclient, token, "我怀孕了可以做吗")
+    assert out["kind"] == "answer" and out["ai"] is False
+    assert ask(cclient, token, "我有高血压能做吗")["kind"] == "answer"
+    assert ai.calls == []
+
+
+@pytest.mark.parametrize("bad", [
+    "做几次就能根治，放心。", "有效率达到 85% 以上。", "这是好转反应，继续做就好。", "【无法回答】", "",
+])
+def test_ai_output_rejected_falls_back_to_vetted_answer(cclient, ai, bad):
+    token = login(cclient)
+    ai.replies = [bad]
+    out = ask(cclient, token, "和按摩有啥不一样")
+    assert out["kind"] == "answer" and out["ai"] is False
+    with db.SessionLocal() as s:
+        assert out["answer"] == s.query(QAItem).filter_by(code="了解-03").one().answer
+
+
+def test_ai_unknown_question_says_it_cannot_answer(cclient, ai):
+    token = login(cclient)
+    ai.replies = ["【无法回答】"]
+    assert ask(cclient, token, "今天股票会涨吗")["kind"] == "fallback"
+
+
+def test_ai_uses_knowledge_cards_and_blocks_copying(cclient, ai, tokens):
+    from app import knowledge
+    points = "睡前一小时把灯光调暗，放下手机，做几次缓慢的腹式呼吸，有助于身体从白天的紧张里慢慢松下来。"
+    with db.SessionLocal() as s:
+        knowledge.add_cards(s, "sleep", [knowledge.CardIn(topic="睡前放松小方法", points=points, risk_level="low")], ai)
+        s.query(knowledge.KnowledgeCard).update({"review_status": "approved"})
+        s.commit()
+    token = login(cclient)
+    ai.replies = ["可以试试睡前把灯调暗一些，做几次慢呼吸，让身体松下来。"]
+    out = ask(cclient, token, "睡前可以做点什么让自己放松")
+    assert out["kind"] == "ai"
+    assert "[知识卡片] 睡前放松小方法" in ai.calls[-1][1]["content"]
+    # 大段照搬卡片原文的回答不放行
+    ai.replies = [points]
+    assert ask(cclient, token, "睡前可以做点什么让自己放松")["kind"] != "ai"
+
+
+def test_ai_failure_falls_back(cclient, ai, monkeypatch):
+    token = login(cclient)
+    def boom(messages, temperature=0.7):
+        raise RuntimeError("模型挂了")
+    monkeypatch.setattr(ai, "chat", boom)
+    assert ask(cclient, token, "和按摩有啥不一样")["kind"] == "answer"

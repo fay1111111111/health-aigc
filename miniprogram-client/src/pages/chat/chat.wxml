@@ -55,7 +55,8 @@
               <view wx:for="{{item.related}}" wx:for-item="r" wx:key="code" class="chip" hover-class="chip-hover" data-code="{{r.code}}" data-question="{{r.question}}" bindtap="askPreset">{{r.question}}</view>
             </view>
           </view>
-          <view wx:if="{{item.done && item.kind === 'answer'}}" class="feedback">
+          <view wx:if="{{item.done && item.kind === 'ai'}}" class="ai-tag">AI 生成 · 仅供参考</view>
+          <view wx:if="{{item.done && item.canRate}}" class="feedback">
             <view class="fb {{item.helpful === true ? 'fb-on' : ''}}" data-index="{{index}}" data-helpful="{{true}}" bindtap="rate"><image class="fb-ico" src="/images/icons/thumb-up{{item.helpful === true ? '-on' : ''}}.png" />有帮助</view>
             <view class="fb {{item.helpful === false ? 'fb-on' : ''}}" data-index="{{index}}" data-helpful="{{false}}" bindtap="rate"><image class="fb-ico" src="/images/icons/thumb-down{{item.helpful === false ? '-on' : ''}}.png" />没帮助</view>
           </view>
@@ -70,6 +71,6 @@
       <input class="composer-input" value="{{input}}" placeholder="输入你想了解的问题" placeholder-class="placeholder" maxlength="300" confirm-type="send" cursor-spacing="20" bindinput="onInput" bindconfirm="send" />
       <view class="send press {{input && !sending ? '' : 'send-off'}}" hover-class="press-hover" bindtap="send">发送</view>
     </view>
-    <view class="disclaimer">回答来自老师审核过的问答，由程序匹配给出；不能替代专业诊疗</view>
+    <view class="disclaimer">回答由 AI 根据审核过的资料生成或匹配，仅供参考，不能替代专业诊疗</view>
   </view>
 </view>

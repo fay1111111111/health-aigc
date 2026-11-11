@@ -1,21 +1,35 @@
-"""问答检索：只从已审核的问答清单里作答，不让模型自由发挥。
+"""对话回答。
 
-三档结果：
-- answer   问法和某条问答对得上，直接给这条的回答
+两种方式（.env 的 CHAT_MODE）：
+- llm        大模型根据「审核过的问答 + 知识库卡片」组织回答，只许用给它的资料，资料里没有就说答不了
+- retrieval  不调用大模型，只做问答匹配
+
+回答的种类（kind）：
+- ai       大模型生成的回答，页面上标「AI 生成」
+- answer   审核过的问答原文（点预设问题、中高风险问题、或没开大模型时）
 - suggest  有几条相近但拿不准，列出来让用户自己点
-- fallback 清单里没有，如实说明并记录，供后续补充问答
-另有 risk：出现自伤、极端情绪等信号时，暂停一切推介，只给求助引导。
+- fallback 资料里没有，如实说明并记录，供后续补充
+- risk     出现自伤、极端情绪等信号：不经过大模型，只给固定的求助引导
+- chat     问候、道谢
 """
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 
+import yaml
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import compliance, knowledge
 from .client_models import QAItem
 from .config import get_settings
+from .llm import LLM
+from .products import Product
+
+log = logging.getLogger(__name__)
 
 CATEGORIES = [
     {"id": "learn", "name": "了解"},
@@ -49,14 +63,49 @@ _PUNCT = re.compile(r"[\s\W_]+", re.UNICODE)
 
 ANSWER_SCORE = 0.6
 SUGGEST_SCORE = 0.3
+# 这些风险等级的问答（禁忌、孕期、慢性病、不适反应等）即使开了大模型也原样给出，不让模型改写
+VERBATIM_RISKS = ("mid", "high")
+NO_ANSWER = "【无法回答】"
+MAX_AI_CHARS = 400
+
+SYSTEM_PROMPT = """你是「{app}」小程序里的问答助手，帮用户了解颅骶放松体验和睡眠习惯。
+
+{description}
+
+回答规则：
+1. 只根据下面「资料」里的内容回答。资料里没有、或者和问题对不上的，只输出 {no_answer} 这几个字，不要自己发挥，不要用常识补充。
+2. 这是放松与睡眠习惯方面的信息服务，不是医疗服务：不诊断、不判断病情、不给用药建议、不承诺效果、不给有效率之类的数字。涉及疾病、用药、孕期、手术、身体明显不适的，提醒以医生意见为准。
+3. 项目名称用「颅骶放松」。它不是按摩，不要写成按、揉、推、压。
+4. 用自己的话说，不要照搬资料原文的长句；资料里标了「待确认」的事项（价格、时间、地址等）不要编具体数字，说以门店确认为准。
+5. 语气温和、平实，像懂行的朋友；不推销，不制造焦虑。
+6. 直接回答问题，150 字以内，纯文字，不用标题、列表符号和表情。"""
+
+
+@lru_cache
+def chat_rules(product: str) -> dict:
+    path = get_settings().products_dir / product / "qa" / "chat_rules.yaml"
+    data = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+    return {"block": list(data.get("block") or []), "patterns": [re.compile(p) for p in data.get("block_patterns") or []]}
+
+
+def blocked_terms(text: str, product: str, references: list[str]) -> list[str]:
+    """大模型的回答里有没有不该出现的说法，或大段照搬知识库原文。返回命中的内容，空列表表示通过。"""
+    rules = chat_rules(product)
+    hits = [t for t in rules["block"] if t in text]
+    hits += [m.group(0) for p in rules["patterns"] for m in [p.search(text)] if m]
+    n = get_settings().copy_ngram
+    for ref in references:
+        hits += compliance._copied_spans(text, ref, n)
+    return hits
 
 
 @dataclass
 class Reply:
-    kind: str  # answer / suggest / fallback / risk / chat（问候、道谢）
+    kind: str  # ai / answer / suggest / fallback / risk / chat
     text: str
     item: QAItem | None = None
     related: list[QAItem] = field(default_factory=list)
+    model: str = ""
 
 
 def _norm(text: str) -> str:
@@ -96,10 +145,12 @@ def published(session: Session, product: str) -> list[QAItem]:
     return list(session.scalars(select(QAItem).where(QAItem.product == product, QAItem.status == "published")))
 
 
-def answer(session: Session, product: str, message: str, scene: str = "c", code: str = "") -> Reply:
-    items = published(session, product)
+def answer(session: Session, product: Product, message: str, scene: str = "c", code: str = "",
+           llm: LLM | None = None) -> Reply:
+    items = published(session, product.id)
     by_code = {i.code: i for i in items}
 
+    # 风险信号最先判断，永远不经过大模型
     if is_risk(message):
         risk_item = by_code.get(RISK_CODE)
         return Reply("risk", risk_item.answer if risk_item else RISK_FALLBACK, risk_item)
@@ -107,6 +158,7 @@ def answer(session: Session, product: str, message: str, scene: str = "c", code:
     # 风险条目只由风险识别触发，不参与普通匹配和推荐
     pool = [i for i in items if i.code != RISK_CODE]
 
+    # 点的是预设问题：给那一条审核过的原文
     if code and code in by_code and code != RISK_CODE:
         item = by_code[code]
         return Reply("answer", item.answer, item, _related(pool, item))
@@ -116,16 +168,69 @@ def answer(session: Session, product: str, message: str, scene: str = "c", code:
     if plain in _HELLO or plain in _THANKS:
         text = HELLO if plain in _HELLO else THANKS
         return Reply("chat", text, None, top_questions(pool, prefer or "learn", 3) if plain in _HELLO else [])
+
     ranked = sorted(
         ((score(message, i), i.category == prefer, i.weight, i) for i in pool),
         key=lambda t: t[:3], reverse=True)
-    if ranked and ranked[0][0] >= ANSWER_SCORE:
-        item = ranked[0][3]
-        return Reply("answer", item.answer, item, _related(pool, item))
+    best_score, best = (ranked[0][0], ranked[0][3]) if ranked else (0.0, None)
     close = [t[3] for t in ranked[:3] if t[0] >= SUGGEST_SCORE]
+
+    # 中高风险的问答对上了，原样给出
+    if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS:
+        return Reply("answer", best.answer, best, _related(pool, best))
+
+    if llm is not None and get_settings().chat_mode == "llm":
+        reply = _ai_answer(session, product, message, close, pool, llm)
+        if reply is not None:
+            return reply
+
+    # 没开大模型，或大模型答不了 / 没通过检查：退回问答匹配
+    if best and best_score >= ANSWER_SCORE:
+        return Reply("answer", best.answer, best, _related(pool, best))
     if close:
         return Reply("suggest", SUGGEST, None, close)
     return Reply("fallback", FALLBACK, None, top_questions(pool, "partner" if prefer else "learn", 3))
+
+
+def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[QAItem], pool: list[QAItem],
+               llm: LLM) -> Reply | None:
+    """让大模型根据资料组织回答。答不了、出错、没通过检查都返回 None，由调用方退回问答匹配。"""
+    settings = get_settings()
+    try:
+        cards = knowledge.search(session, product.pools(), message, llm, k=settings.chat_knowledge_top_k,
+                                 max_risk=product.generation_max_risk)
+    except Exception as e:  # noqa: BLE001  知识库不可用时只用问答清单
+        log.warning("知识库检索失败：%s", e)
+        cards = []
+    if not qa_hits and not cards:
+        return None
+
+    parts = []
+    for i in qa_hits:
+        pending = f"\n（待确认：{i.pending}）" if i.pending else ""
+        parts.append(f"[审核过的问答] 问：{i.question}\n答：{i.answer}{pending}")
+    for c in cards:
+        parts.append(f"[知识卡片] {c.topic}：{c.points}")
+    system = SYSTEM_PROMPT.format(app="药王山沁养", description=product.description, no_answer=NO_ANSWER)
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": "资料：\n\n" + "\n\n".join(parts) + f"\n\n用户的问题：{message}"},
+    ]
+    try:
+        result = llm.chat(messages, temperature=0.3)
+    except Exception as e:  # noqa: BLE001
+        log.warning("对话生成失败，退回问答匹配：%s", e)
+        return None
+    text = result.text.strip()
+    if not text or NO_ANSWER in text or "无法回答" in text[:12]:
+        return None
+    hits = blocked_terms(text, product.id, [c.points for c in cards])
+    if hits or len(text) > MAX_AI_CHARS:
+        log.warning("对话回答没通过检查（%s），退回问答匹配", "、".join(hits) or "过长")
+        return None
+    top = qa_hits[0] if qa_hits else None
+    related = _related(pool, top) if top else []
+    return Reply("ai", text, top, related, result.model)
 
 
 def _related(pool: list[QAItem], item: QAItem, n: int = 3) -> list[QAItem]:

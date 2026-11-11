@@ -68,7 +68,7 @@ class ChatMessage(Base):
     scene: Mapped[str] = mapped_column(String(16), default="c")  # c / partner
     question: Mapped[str] = mapped_column(Text)
     answer: Mapped[str] = mapped_column(Text)
-    kind: Mapped[str] = mapped_column(String(16))  # answer 命中 / suggest 给候选 / fallback 没答上 / risk 风险信号 / chat 问候
+    kind: Mapped[str] = mapped_column(String(16))  # ai 大模型生成 / answer 问答原文 / suggest 给候选 / fallback 没答上 / risk 风险信号 / chat 问候
     qa_code: Mapped[str] = mapped_column(String(16), default="")
     helpful: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     handled: Mapped[bool] = mapped_column(Boolean, default=False)  # 风险信号是否已有人跟进

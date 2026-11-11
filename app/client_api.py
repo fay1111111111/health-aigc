@@ -21,6 +21,7 @@ from . import auth, qa
 from .client_models import ChatMessage, ClientSession, ClientUser, PartnerLead, QAItem, SelfAssessment, SleepRecord
 from .config import get_settings
 from .db import get_session
+from .llm import LLM, get_llm
 from .models import User, now
 from .products import load_product
 
@@ -219,7 +220,7 @@ def _q(item: QAItem) -> dict:
 
 
 def chat_out(m: ChatMessage, related: list[QAItem] | None = None) -> dict:
-    return {"id": m.id, "question": m.question, "answer": m.answer, "kind": m.kind,
+    return {"id": m.id, "question": m.question, "answer": m.answer, "kind": m.kind, "ai": m.kind == "ai",
             "helpful": m.helpful, "created_at": m.created_at, "related": [_q(i) for i in related or []]}
 
 
@@ -235,10 +236,11 @@ def home(scene: Literal["c", "partner"] = "c", _: ClientUser = Depends(current_c
 
 
 @router.post("/chat")
-def chat(body: ChatIn, user: ClientUser = Depends(current_client), session: Session = Depends(get_session)):
-    product = load_product().id
-    reply = qa.answer(session, product, body.message, body.scene, body.code)
-    msg = ChatMessage(product=product, user_id=user.id, scene=body.scene, question=body.message.strip(),
+def chat(body: ChatIn, user: ClientUser = Depends(current_client), session: Session = Depends(get_session),
+         llm: LLM = Depends(get_llm)):
+    product = load_product()
+    reply = qa.answer(session, product, body.message, body.scene, body.code, llm)
+    msg = ChatMessage(product=product.id, user_id=user.id, scene=body.scene, question=body.message.strip(),
                       answer=reply.text, kind=reply.kind, qa_code=reply.item.code if reply.item else "")
     session.add(msg)
     session.commit()

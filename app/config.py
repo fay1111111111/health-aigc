@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     wx_secret: str = ""
     wx_dev_login: bool = False  # 只在本地联调时打开：没配置 AppID 也能登录测试账号
     client_session_days: int = 30
+    # 对话方式：llm = 大模型根据审核过的问答和知识库组织回答；retrieval = 只做问答匹配，不调用大模型
+    chat_mode: str = "llm"
+    chat_knowledge_top_k: int = 4
     upload_dir: Path = ROOT / "uploads"  # 用户头像
 
     products_dir: Path = ROOT / "products"

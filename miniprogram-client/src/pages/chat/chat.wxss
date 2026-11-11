@@ -51,6 +51,7 @@
 .chip { margin-top: 12rpx; padding: 16rpx 22rpx; border-radius: 20rpx; background: var(--green-mist); color: var(--green-deep); font-size: 26rpx; line-height: 1.4; }
 .chip-hover { background: var(--green-soft); }
 
+.ai-tag { margin: 10rpx 0 0 8rpx; color: var(--hint); font-size: 22rpx; }
 .feedback { display: flex; margin-top: 12rpx; }
 .fb { display: flex; align-items: center; margin-right: 16rpx; padding: 8rpx 22rpx; border-radius: 999rpx; background: rgba(118, 118, 128, 0.1); color: var(--sub); font-size: 24rpx; }
 .fb-on { background: var(--green-soft); color: var(--green-deep); font-weight: 600; animation: pop 0.3s ease-out; transform: none; }

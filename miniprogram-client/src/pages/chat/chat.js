@@ -5,6 +5,11 @@ const PAGE_SIZE = 4 // 每个分类一次展示几条常见问题
 let seq = 0
 const CAT_ICONS = { learn: 'leaf', experience: 'lotus', aftercare: 'heart' }
 
+// 大模型生成的回答和审核过的问答原文都可以评价
+function canRate(kind) {
+  return kind === 'ai' || kind === 'answer'
+}
+
 function isNight() {
   const h = new Date().getHours()
   return h >= 18 || h < 5 // 和问候语的分界一致：18 点后「晚上好」，5 点前「夜深了」
@@ -70,7 +75,7 @@ Page({
         messages.push({ key: 'k' + seq++, role: 'user', text: m.question })
         messages.push({
           key: 'k' + seq++, role: 'bot', id: m.id, kind: m.kind, shown: m.answer, done: true,
-          helpful: m.helpful, related: []
+          helpful: m.helpful, related: [], canRate: canRate(m.kind)
         })
       })
       const categories = home.categories.map((c) => Object.assign({ icon: CAT_ICONS[c.id] || 'leaf' }, c))
@@ -136,7 +141,7 @@ Page({
     const started = Date.now()
     api.post('/api/c/chat', { message, code: code || '', scene: scene || 'c' }).then((res) => {
       // 至少让「正在输入」的小动画停留一会儿，回答不会闪一下就出现
-      const wait = Math.max(0, 500 - (Date.now() - started))
+      const wait = Math.max(0, 500 - (Date.now() - started)) // 大模型本身要几秒，这里只保证最短停留
       setTimeout(() => this.reveal(index, res), wait)
     }).catch((err) => {
       this.setData({
@@ -156,7 +161,7 @@ Page({
     this.setData({
       [base]: {
         key: this.data.messages[index].key, role: 'bot', id: res.id, kind: res.kind,
-        shown: '', done: false, helpful: null, related: res.related || []
+        shown: '', done: false, helpful: null, related: res.related || [], canRate: canRate(res.kind)
       }
     })
     const step = Math.max(3, Math.ceil(full.length / 40))
