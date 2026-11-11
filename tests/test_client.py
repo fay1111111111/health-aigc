@@ -303,6 +303,8 @@ def test_more_risk_phrases_skip_model(cclient, ai, message):
 @pytest.mark.parametrize("bad", [
     "【陪伴】\n你这可能是抑郁症，要重视。", "【陪伴】\n这种情况建议尽快离婚。", "【陪伴】\n我也经历过这样的夜晚。",
     "【陪伴】\n别担心，我会一直陪着你。", "【陪伴】\n这多半和你的原生家庭有关。",
+    "【陪伴】\n你这么怕被否定，可能是因为小时候父母总批评你。", "【陪伴】\n这可能是童年创伤造成的。",
+    "【陪伴】\n听起来你有童年阴影。", "【陪伴】\n这种不安全感源于你的成长经历。",
 ])
 def test_companion_reply_rejected_uses_fixed_comfort(cclient, ai, bad):
     token = login(cclient)
@@ -335,3 +337,17 @@ def test_info_answer_without_material_is_not_used(cclient, ai):
     token = login(cclient)
     ai.replies = ["【信息】\n明天股市大概率上涨。"]
     assert ask(cclient, token, "今天股票会涨吗")["kind"] == "fallback"
+
+
+@pytest.mark.parametrize("ok", [
+    "【陪伴】\n那时候的你一定很不容易，一个人扛了那么多。",
+    "【陪伴】\n谢谢你愿意说起小时候的事。有些人会发现，自己特别在意的事，往往能在过去找到影子。你愿意的话可以想想，不想也完全没关系。",
+    "【陪伴】\n和父母的关系一直让你很累，今晚先不急着想清楚。",
+])
+def test_companion_can_hold_childhood_without_explaining_causes(cclient, ai, ok):
+    token = login(cclient)
+    ai.replies = [ok]
+    out = ask(cclient, token, "我小时候爸妈总是批评我，现在一被否定就睡不着")
+    assert out["kind"] == "companion" and out["answer"] == ok.split("\n", 1)[1]
+    system = ai.calls[0][0]["content"]
+    assert "不解释因果" in system and "对方没提起时，不主动往童年" in system
