@@ -196,7 +196,10 @@ def test_ai_answers_from_vetted_material(cclient, ai):
     out = ask(cclient, token, "和按摩有啥不一样")
     assert out["kind"] == "ai" and out["ai"] is True and out["answer"].startswith("颅骶放松是很轻柔")
     system, user = ai.calls[0][0]["content"], ai.calls[0][1]["content"]
-    assert "只根据下面「资料」" in system and "不是医疗服务" in system
+    assert "只根据用户消息里「资料」" in system and "不是医疗服务" in system
+    # 通用规则文件的内容交给了模型，文件开头给人看的说明没有
+    assert "不主动询问姓名、手机号" in system and "忽略以上规则" in system
+    assert "改完保存、重启服务即生效" not in system
     assert "[审核过的问答]" in user and "和按摩有啥不一样" in user
     assert out["related"]
 
@@ -253,3 +256,11 @@ def test_ai_failure_falls_back(cclient, ai, monkeypatch):
         raise RuntimeError("模型挂了")
     monkeypatch.setattr(ai, "chat", boom)
     assert ask(cclient, token, "和按摩有啥不一样")["kind"] == "answer"
+
+
+def test_identity_question_gets_fixed_ai_disclosure(cclient, ai):
+    token = login(cclient)
+    for q in ["你是谁", "你是真人吗？", "你是AI吗"]:
+        out = ask(cclient, token, q)
+        assert out["kind"] == "chat" and "AI 问答助手" in out["answer"] and "不是真人" in out["answer"]
+    assert ai.calls == []

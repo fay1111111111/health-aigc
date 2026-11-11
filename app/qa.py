@@ -53,7 +53,9 @@ FALLBACK = (
     "这个问题我这里还没有准备好可靠的回答，已经记下来了，会交给老师补充。"
     "你可以换个说法再问，或者先看看下面这些常见问题。涉及身体不适的情况，请以医生的意见为准。"
 )
-HELLO = "你好，我是沁养小助手。可以问我颅骶放松是什么、适不适合你、体验前后要注意什么；我只回答已经由老师确认过的内容。"
+HELLO = "你好，我是药王山沁养的 AI 问答助手。可以问我颅骶放松是什么、适不适合你、体验前后要注意什么，也可以聊聊睡前怎么慢下来。"
+WHOAMI = "我是药王山沁养的 AI 问答助手，不是真人，也不是医生。我会根据老师审核过的资料回答关于颅骶放松和睡眠习惯的问题；涉及身体不适或用药，请以医生的意见为准。"
+_WHOAMI = ("你是谁", "你是什么", "你叫什么", "是真人", "是人吗", "是机器人", "是ai", "是人工智能", "是客服吗", "是医生吗", "你是不是人")
 THANKS = "不客气。还有想了解的，随时问我。"
 _HELLO = {"你好", "您好", "hi", "hello", "在吗", "在么", "嗨", "哈喽", "有人吗"}
 _THANKS = {"谢谢", "谢谢你", "多谢", "感谢", "好的", "好", "明白了", "知道了", "ok", "嗯", "嗯嗯", "好的谢谢"}
@@ -68,17 +70,35 @@ VERBATIM_RISKS = ("mid", "high")
 NO_ANSWER = "【无法回答】"
 MAX_AI_CHARS = 400
 
-SYSTEM_PROMPT = """你是「{app}」小程序里的问答助手，帮用户了解颅骶放松体验和睡眠习惯。
+SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
 
+关于这家门店和服务：
 {description}
 
-回答规则：
-1. 只根据下面「资料」里的内容回答。资料里没有、或者和问题对不上的，只输出 {no_answer} 这几个字，不要自己发挥，不要用常识补充。
-2. 这是放松与睡眠习惯方面的信息服务，不是医疗服务：不诊断、不判断病情、不给用药建议、不承诺效果、不给有效率之类的数字。涉及疾病、用药、孕期、手术、身体明显不适的，提醒以医生意见为准。
-3. 项目名称用「颅骶放松」。它不是按摩，不要写成按、揉、推、压。
-4. 用自己的话说，不要照搬资料原文的长句；资料里标了「待确认」的事项（价格、时间、地址等）不要编具体数字，说以门店确认为准。
-5. 语气温和、平实，像懂行的朋友；不推销，不制造焦虑。
-6. 直接回答问题，150 字以内，纯文字，不用标题、列表符号和表情。"""
+最重要的一条：只根据用户消息里「资料」部分的内容回答。资料里没有、或者和问题对不上的，只输出 {no_answer} 这几个字，不要自己发挥，不要用常识补充。
+资料里标了「待确认」的事项不要给出具体数字或承诺。
+
+以下是你每次回答都要遵守的规则：
+
+{rules}"""
+
+# 规则文件缺失时用的最简规则
+DEFAULT_RULES = """- 这是放松与睡眠习惯方面的信息服务，不是医疗服务：不诊断、不给用药建议、不承诺效果。
+- 涉及疾病、用药、孕期、身体明显不适的，提醒以医生意见为准。
+- 项目名称用「颅骶放松」，它不是按摩。
+- 语气温和平实，150 字以内，纯文字。"""
+
+
+@lru_cache
+def assistant_rules(product: str) -> str:
+    """大模型要遵守的通用规则，写在 products/<产品线>/qa/assistant_rules.md，老师和运营可以直接改。"""
+    path = get_settings().products_dir / product / "qa" / "assistant_rules.md"
+    if not path.exists():
+        return DEFAULT_RULES
+    lines = path.read_text(encoding="utf-8").splitlines()
+    # 文件开头到第一个「## 」之前是给人看的说明，不交给模型
+    start = next((i for i, line in enumerate(lines) if line.startswith("## ")), 0)
+    return "\n".join(lines[start:]).strip() or DEFAULT_RULES
 
 
 @lru_cache
@@ -165,6 +185,8 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
 
     prefer = "partner" if scene == "partner" else None
     plain = _norm(message)
+    if len(plain) <= 16 and any(k in plain for k in _WHOAMI):
+        return Reply("chat", WHOAMI)
     if plain in _HELLO or plain in _THANKS:
         text = HELLO if plain in _HELLO else THANKS
         return Reply("chat", text, None, top_questions(pool, prefer or "learn", 3) if plain in _HELLO else [])
@@ -211,7 +233,8 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
         parts.append(f"[审核过的问答] 问：{i.question}\n答：{i.answer}{pending}")
     for c in cards:
         parts.append(f"[知识卡片] {c.topic}：{c.points}")
-    system = SYSTEM_PROMPT.format(app="药王山沁养", description=product.description, no_answer=NO_ANSWER)
+    system = SYSTEM_PROMPT.format(app="药王山沁养", description=product.description, no_answer=NO_ANSWER,
+                                  rules=assistant_rules(product.id))
     messages = [
         {"role": "system", "content": system},
         {"role": "user", "content": "资料：\n\n" + "\n\n".join(parts) + f"\n\n用户的问题：{message}"},
