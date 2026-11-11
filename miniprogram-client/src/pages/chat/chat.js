@@ -7,7 +7,7 @@ const CAT_ICONS = { learn: 'leaf', experience: 'lotus', aftercare: 'heart' }
 
 // 大模型生成的回答和审核过的问答原文都可以评价
 function canRate(kind) {
-  return kind === 'ai' || kind === 'answer'
+  return kind === 'ai' || kind === 'companion' || kind === 'answer'
 }
 
 function isNight() {
@@ -75,7 +75,7 @@ Page({
         messages.push({ key: 'k' + seq++, role: 'user', text: m.question })
         messages.push({
           key: 'k' + seq++, role: 'bot', id: m.id, kind: m.kind, shown: m.answer, done: true,
-          helpful: m.helpful, related: [], canRate: canRate(m.kind)
+          helpful: m.helpful, related: [], canRate: canRate(m.kind), ai: m.ai
         })
       })
       const categories = home.categories.map((c) => Object.assign({ icon: CAT_ICONS[c.id] || 'leaf' }, c))
@@ -161,7 +161,7 @@ Page({
     this.setData({
       [base]: {
         key: this.data.messages[index].key, role: 'bot', id: res.id, kind: res.kind,
-        shown: '', done: false, helpful: null, related: res.related || [], canRate: canRate(res.kind)
+        shown: '', done: false, helpful: null, related: res.related || [], canRate: canRate(res.kind), ai: res.ai
       }
     })
     const step = Math.max(3, Math.ceil(full.length / 40))

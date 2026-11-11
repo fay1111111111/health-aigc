@@ -220,7 +220,7 @@ def _q(item: QAItem) -> dict:
 
 
 def chat_out(m: ChatMessage, related: list[QAItem] | None = None) -> dict:
-    return {"id": m.id, "question": m.question, "answer": m.answer, "kind": m.kind, "ai": m.kind == "ai",
+    return {"id": m.id, "question": m.question, "answer": m.answer, "kind": m.kind, "ai": m.kind in ("ai", "companion"),
             "helpful": m.helpful, "created_at": m.created_at, "related": [_q(i) for i in related or []]}
 
 
@@ -235,13 +235,27 @@ def home(scene: Literal["c", "partner"] = "c", _: ClientUser = Depends(current_c
         {"id": c, "name": names[c], "questions": [_q(i) for i in qa.top_questions(pool, c, 20)]} for c in wanted]}
 
 
+HISTORY_TURNS = 4
+HISTORY_MINUTES = 60
+
+
+def _recent_turns(session: Session, user_id: int) -> list[tuple[str, str]]:
+    """最近一小时内的几轮对话，交给大模型接上下文。危机回应不带进去，免得模型照着固定话术说。"""
+    rows = session.scalars(
+        select(ChatMessage).where(ChatMessage.user_id == user_id, ChatMessage.kind.in_(["ai", "companion", "answer", "chat"]),
+                                  ChatMessage.created_at > now() - timedelta(minutes=HISTORY_MINUTES))
+        .order_by(ChatMessage.id.desc()).limit(HISTORY_TURNS))
+    return [(m.question, m.answer) for m in reversed(list(rows))]
+
+
 @router.post("/chat")
 def chat(body: ChatIn, user: ClientUser = Depends(current_client), session: Session = Depends(get_session),
          llm: LLM = Depends(get_llm)):
     product = load_product()
-    reply = qa.answer(session, product, body.message, body.scene, body.code, llm)
+    reply = qa.answer(session, product, body.message, body.scene, body.code, llm, _recent_turns(session, user.id))
+    code = qa.WATCH_CODE if reply.watch else (reply.item.code if reply.item else "")
     msg = ChatMessage(product=product.id, user_id=user.id, scene=body.scene, question=body.message.strip(),
-                      answer=reply.text, kind=reply.kind, qa_code=reply.item.code if reply.item else "")
+                      answer=reply.text, kind=reply.kind, qa_code=code)
     session.add(msg)
     session.commit()
     # 风险信号下不给任何推荐问题，页面只显示求助引导
@@ -449,6 +463,8 @@ def admin_overview(_: User = Depends(auth.require("reviewer")), session: Session
                                 .order_by(ChatMessage.id.desc()).limit(50))
     risks = session.scalars(select(ChatMessage).where(mine, ChatMessage.kind == "risk", ChatMessage.handled.is_(False))
                             .order_by(ChatMessage.id.desc()).limit(50))
+    watch = session.scalars(select(ChatMessage).where(mine, ChatMessage.qa_code == qa.WATCH_CODE, ChatMessage.handled.is_(False))
+                            .order_by(ChatMessage.id.desc()).limit(50))
     leads = session.scalars(select(PartnerLead).where(PartnerLead.product == product)
                             .order_by(PartnerLead.id.desc()).limit(50))
     return {
@@ -459,6 +475,7 @@ def admin_overview(_: User = Depends(auth.require("reviewer")), session: Session
         "unanswered": [{"id": m.id, "question": m.question, "kind": m.kind, "created_at": m.created_at} for m in unanswered],
         "not_helpful_list": [{"id": m.id, "question": m.question, "qa_code": m.qa_code} for m in unhelpful],
         "risk_pending": [{"id": m.id, "user_id": m.user_id, "question": m.question, "created_at": m.created_at} for m in risks],
+        "watch_pending": [{"id": m.id, "user_id": m.user_id, "question": m.question, "created_at": m.created_at} for m in watch],
         "leads": [lead_out(x) for x in leads],
     }
 
@@ -467,7 +484,7 @@ def admin_overview(_: User = Depends(auth.require("reviewer")), session: Session
 def admin_risk_handled(message_id: int, _: User = Depends(auth.require("reviewer")),
                        session: Session = Depends(get_session)):
     msg = session.get(ChatMessage, message_id)
-    if msg is None or msg.kind != "risk":
+    if msg is None or (msg.kind != "risk" and msg.qa_code != qa.WATCH_CODE):
         raise HTTPException(404, "找不到这条记录")
     msg.handled = True
     session.commit()

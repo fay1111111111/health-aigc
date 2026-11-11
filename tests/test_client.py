@@ -264,3 +264,74 @@ def test_identity_question_gets_fixed_ai_disclosure(cclient, ai):
         out = ask(cclient, token, q)
         assert out["kind"] == "chat" and "AI 问答助手" in out["answer"] and "不是真人" in out["answer"]
     assert ai.calls == []
+
+
+# ---------- 倾听陪伴 ----------
+
+def test_companion_reply_and_history(cclient, ai):
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n听起来这几天你一直绷着，很不容易。今晚最放不下的是哪件事？",
+                  "【陪伴】\n嗯，方案的事一直悬着，难怪静不下来。"]
+    out = ask(cclient, token, "最近压力好大，躺下脑子就停不下来")
+    assert out["kind"] == "companion" and out["ai"] is True and out["related"] == []
+    assert out["answer"].startswith("听起来这几天") and "【" not in out["answer"]
+    system = ai.calls[0][0]["content"]
+    assert "【陪伴】" in system and "先听，再回应" in system and "这不是心理咨询" in system
+    ask(cclient, token, "主要是工作上的方案一直没过")
+    second = ai.calls[1]
+    # 第二轮带上了第一轮的对话
+    assert [m["role"] for m in second] == ["system", "user", "assistant", "user"]
+    assert second[1]["content"] == "最近压力好大，躺下脑子就停不下来" and second[2]["content"].startswith("听起来")
+
+
+def test_model_can_escalate_to_crisis(cclient, ai, tokens):
+    token = login(cclient)
+    ai.replies = ["【危机】"]
+    out = ask(cclient, token, "有时候觉得睡着了就别再叫我了")
+    assert out["kind"] == "risk" and out["related"] == [] and "专业" in out["answer"]
+    o = cclient.get("/api/client-admin/overview", headers=h(tokens["reviewer"])).json()
+    assert len(o["risk_pending"]) == 1
+
+
+@pytest.mark.parametrize("message", ["吃多少安眠药才能一直睡下去", "真想一了百了", "没有我会更好吧"])
+def test_more_risk_phrases_skip_model(cclient, ai, message):
+    token = login(cclient)
+    assert ask(cclient, token, message)["kind"] == "risk"
+    assert ai.calls == []
+
+
+@pytest.mark.parametrize("bad", [
+    "【陪伴】\n你这可能是抑郁症，要重视。", "【陪伴】\n这种情况建议尽快离婚。", "【陪伴】\n我也经历过这样的夜晚。",
+    "【陪伴】\n别担心，我会一直陪着你。", "【陪伴】\n这多半和你的原生家庭有关。",
+])
+def test_companion_reply_rejected_uses_fixed_comfort(cclient, ai, bad):
+    token = login(cclient)
+    ai.replies = [bad]
+    out = ask(cclient, token, "今天好难过，什么都不想做")
+    assert out["kind"] == "companion" and out["answer"] == qa.COMFORT
+
+
+def test_watch_phrase_adds_care_and_flags_for_staff(cclient, ai, tokens):
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n撑了这么久，真的很累了。你现在一个人吗，身边有没有可以说说话的人？"]
+    out = ask(cclient, token, "感觉快撑不下去了")
+    assert out["kind"] == "companion"
+    assert "需要留意的说法" in ai.calls[0][0]["content"]
+    o = cclient.get("/api/client-admin/overview", headers=h(tokens["reviewer"])).json()
+    assert [w["question"] for w in o["watch_pending"]] == ["感觉快撑不下去了"]
+    cclient.post(f"/api/client-admin/risk/{o['watch_pending'][0]['id']}/handled", headers=h(tokens["reviewer"]))
+    assert cclient.get("/api/client-admin/overview", headers=h(tokens["reviewer"])).json()["watch_pending"] == []
+
+
+def test_feelings_without_model_get_comfort_not_a_brochure(cclient):
+    token = login(cclient)  # 没开大模型
+    out = ask(cclient, token, "今天好难过")
+    assert out["kind"] == "companion" and out["answer"] == qa.COMFORT and out["related"] == []
+    # 明确在问事情的，照常给问答
+    assert ask(cclient, token, "做的时候疼不疼啊")["kind"] == "answer"
+
+
+def test_info_answer_without_material_is_not_used(cclient, ai):
+    token = login(cclient)
+    ai.replies = ["【信息】\n明天股市大概率上涨。"]
+    assert ask(cclient, token, "今天股票会涨吗")["kind"] == "fallback"

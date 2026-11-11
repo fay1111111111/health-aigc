@@ -5,7 +5,8 @@
 - retrieval  不调用大模型，只做问答匹配
 
 回答的种类（kind）：
-- ai       大模型生成的回答，页面上标「AI 生成」
+- ai         大模型根据资料生成的回答，页面上标「AI 生成」
+- companion  倾听陪伴：用户在说感受、心事时，大模型按「倾听与陪伴」规则回应，不需要资料
 - answer   审核过的问答原文（点预设问题、中高风险问题、或没开大模型时）
 - suggest  有几条相近但拿不准，列出来让用户自己点
 - fallback 资料里没有，如实说明并记录，供后续补充
@@ -41,7 +42,9 @@ CATEGORIES = [
 # 风险信号：命中任意一个就走求助引导。宁可多拦，不可漏。
 RISK_TERMS = [
     "不想活", "想死", "去死", "自杀", "自残", "轻生", "活不下去", "活着没意思", "活着没有意义",
-    "结束生命", "结束自己", "伤害自己", "割腕", "跳楼", "了结自己", "不如死", "寻死", "遗书", "安乐死",
+    "结束生命", "结束自己", "结束这一切", "伤害自己", "割腕", "跳楼", "跳下去", "了结自己", "不如死", "寻死",
+    "遗书", "安乐死", "一了百了", "死了算了", "不想再醒来", "永远睡过去", "没有我会更好", "没我更好",
+    "吃多少安眠药", "安眠药吃多少", "一瓶安眠药", "烧炭",
 ]
 RISK_CODE = "售后-03"
 RISK_FALLBACK = (
@@ -59,6 +62,13 @@ _WHOAMI = ("你是谁", "你是什么", "你叫什么", "是真人", "是人吗"
 THANKS = "不客气。还有想了解的，随时问我。"
 _HELLO = {"你好", "您好", "hi", "hello", "在吗", "在么", "嗨", "哈喽", "有人吗"}
 _THANKS = {"谢谢", "谢谢你", "多谢", "感谢", "好的", "好", "明白了", "知道了", "ok", "嗯", "嗯嗯", "好的谢谢"}
+# 用户在说心事，但大模型不可用或回答没过检查时用的固定回应
+COMFORT = "我在，慢慢说。不用急着把事情讲清楚，想到哪儿说到哪儿就好。如果此刻只想安静一会儿，也可以先慢慢呼气，比吸气再长一点，做几次。"
+_FEELING = (
+    "难过", "难受", "伤心", "委屈", "想哭", "哭了", "焦虑", "烦躁", "心烦", "很烦", "压力", "好累", "太累", "心累", "孤独", "孤单",
+    "害怕", "恐惧", "紧张", "心慌", "不安", "失落", "空虚", "迷茫", "无助", "自责", "愧疚", "生气", "愤怒", "憋屈", "没人理解",
+    "睡不着", "失眠", "胡思乱想", "停不下来", "静不下来", "脑子很乱", "心里很乱", "心里堵",
+)
 SUGGEST = "我不太确定你问的是哪一个，下面这几条里有你想了解的吗？"
 
 _PUNCT = re.compile(r"[\s\W_]+", re.UNICODE)
@@ -68,15 +78,27 @@ SUGGEST_SCORE = 0.3
 # 这些风险等级的问答（禁忌、孕期、慢性病、不适反应等）即使开了大模型也原样给出，不让模型改写
 VERBATIM_RISKS = ("mid", "high")
 NO_ANSWER = "【无法回答】"
+TAG_INFO, TAG_COMPANION, TAG_CRISIS = "【信息】", "【陪伴】", "【危机】"
 MAX_AI_CHARS = 400
+MAX_COMPANION_CHARS = 260
+WATCH_CODE = "关注"  # 记在对话记录的 qa_code 里，后台据此列出「需要留意」的对话
 
 SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
 
 关于这家门店和服务：
 {description}
 
-最重要的一条：只根据用户消息里「资料」部分的内容回答。资料里没有、或者和问题对不上的，只输出 {no_answer} 这几个字，不要自己发挥，不要用常识补充。
-资料里标了「待确认」的事项不要给出具体数字或承诺。
+每次回答，第一行只写下面三个标记之一，然后换行写正文：
+
+{tag_info}  用户在问事情（服务、体验、睡眠知识、学习等）。
+  只根据用户消息里「资料」部分的内容回答。资料里没有、或者和问题对不上的，正文只写 {no_answer}，不要自己发挥，不要用常识补充。
+  资料里标了「待确认」的事项不要给出具体数字或承诺。
+{tag_companion}  用户在说自己的感受、压力、心事，或者睡不着的烦躁。
+  按下面「倾听与陪伴」的规则回应，不需要资料。
+{tag_crisis}  用户流露出伤害自己、不想活下去、想消失的念头，哪怕说得很隐晦。
+  正文留空，什么都不要写，系统会接手。
+
+拿不准是问事情还是说心事时，按说心事处理：先接住感受，再顺带回答。
 
 以下是你每次回答都要遵守的规则：
 
@@ -105,14 +127,31 @@ def assistant_rules(product: str) -> str:
 def chat_rules(product: str) -> dict:
     path = get_settings().products_dir / product / "qa" / "chat_rules.yaml"
     data = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
-    return {"block": list(data.get("block") or []), "patterns": [re.compile(p) for p in data.get("block_patterns") or []]}
+    return {
+        "block": list(data.get("block") or []),
+        "patterns": [re.compile(p) for p in data.get("block_patterns") or []],
+        "companion_patterns": [re.compile(p) for p in data.get("companion_block_patterns") or []],
+        "watch": [_norm(t) for t in data.get("watch") or []],
+    }
 
 
-def blocked_terms(text: str, product: str, references: list[str]) -> list[str]:
+def needs_watch(message: str, product: str) -> bool:
+    """不到危机的程度，但值得多关切一句、并让人工留意的说法。"""
+    m = _norm(message)
+    return any(t and t in m for t in chat_rules(product)["watch"])
+
+
+def is_feeling(message: str) -> bool:
+    m = _norm(message)
+    return any(t in m for t in _FEELING)
+
+
+def blocked_terms(text: str, product: str, references: list[str], companion: bool = False) -> list[str]:
     """大模型的回答里有没有不该出现的说法，或大段照搬知识库原文。返回命中的内容，空列表表示通过。"""
     rules = chat_rules(product)
     hits = [t for t in rules["block"] if t in text]
-    hits += [m.group(0) for p in rules["patterns"] for m in [p.search(text)] if m]
+    patterns = rules["patterns"] + (rules["companion_patterns"] if companion else [])
+    hits += [m.group(0) for p in patterns for m in [p.search(text)] if m]
     n = get_settings().copy_ngram
     for ref in references:
         hits += compliance._copied_spans(text, ref, n)
@@ -126,6 +165,7 @@ class Reply:
     item: QAItem | None = None
     related: list[QAItem] = field(default_factory=list)
     model: str = ""
+    watch: bool = False  # 需要人工留意
 
 
 def _norm(text: str) -> str:
@@ -166,14 +206,16 @@ def published(session: Session, product: str) -> list[QAItem]:
 
 
 def answer(session: Session, product: Product, message: str, scene: str = "c", code: str = "",
-           llm: LLM | None = None) -> Reply:
+           llm: LLM | None = None, history: list[tuple[str, str]] | None = None) -> Reply:
+    """history 是这位用户最近几轮的（用户说的, 助手答的），让大模型接得上前面的话。"""
     items = published(session, product.id)
     by_code = {i.code: i for i in items}
+    risk_item = by_code.get(RISK_CODE)
+    crisis = Reply("risk", risk_item.answer if risk_item else RISK_FALLBACK, risk_item)
 
     # 风险信号最先判断，永远不经过大模型
     if is_risk(message):
-        risk_item = by_code.get(RISK_CODE)
-        return Reply("risk", risk_item.answer if risk_item else RISK_FALLBACK, risk_item)
+        return crisis
 
     # 风险条目只由风险识别触发，不参与普通匹配和推荐
     pool = [i for i in items if i.code != RISK_CODE]
@@ -191,6 +233,7 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
         text = HELLO if plain in _HELLO else THANKS
         return Reply("chat", text, None, top_questions(pool, prefer or "learn", 3) if plain in _HELLO else [])
 
+    watch = needs_watch(message, product.id)
     ranked = sorted(
         ((score(message, i), i.category == prefer, i.weight, i) for i in pool),
         key=lambda t: t[:3], reverse=True)
@@ -198,15 +241,19 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
     close = [t[3] for t in ranked[:3] if t[0] >= SUGGEST_SCORE]
 
     # 中高风险的问答对上了，原样给出
-    if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS:
+    if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS and not watch:
         return Reply("answer", best.answer, best, _related(pool, best))
 
     if llm is not None and get_settings().chat_mode == "llm":
-        reply = _ai_answer(session, product, message, close, pool, llm)
+        reply = _ai_answer(session, product, message, close, pool, llm, history or [], watch)
+        if reply is CRISIS:
+            return crisis
         if reply is not None:
             return reply
 
-    # 没开大模型，或大模型答不了 / 没通过检查：退回问答匹配
+    # 没开大模型，或大模型答不了 / 没通过检查
+    if watch or (is_feeling(message) and best_score < ANSWER_SCORE):
+        return Reply("companion", COMFORT, watch=watch)  # 在说心事：给一句固定的回应，不拿问答去堵
     if best and best_score >= ANSWER_SCORE:
         return Reply("answer", best.answer, best, _related(pool, best))
     if close:
@@ -214,9 +261,12 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
     return Reply("fallback", FALLBACK, None, top_questions(pool, "partner" if prefer else "learn", 3))
 
 
+CRISIS = object()  # _ai_answer 的特殊返回值：大模型判断是危机信号
+
+
 def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[QAItem], pool: list[QAItem],
-               llm: LLM) -> Reply | None:
-    """让大模型根据资料组织回答。答不了、出错、没通过检查都返回 None，由调用方退回问答匹配。"""
+               llm: LLM, history: list[tuple[str, str]], watch: bool):
+    """让大模型回答或陪伴。返回 Reply；判断为危机返回 CRISIS；答不了、出错、没通过检查返回 None，由调用方兜底。"""
     settings = get_settings()
     try:
         cards = knowledge.search(session, product.pools(), message, llm, k=settings.chat_knowledge_top_k,
@@ -224,8 +274,6 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
     except Exception as e:  # noqa: BLE001  知识库不可用时只用问答清单
         log.warning("知识库检索失败：%s", e)
         cards = []
-    if not qa_hits and not cards:
-        return None
 
     parts = []
     for i in qa_hits:
@@ -233,27 +281,50 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
         parts.append(f"[审核过的问答] 问：{i.question}\n答：{i.answer}{pending}")
     for c in cards:
         parts.append(f"[知识卡片] {c.topic}：{c.points}")
+    material = "\n\n".join(parts) if parts else "（这次没有找到相关资料）"
     system = SYSTEM_PROMPT.format(app="药王山沁养", description=product.description, no_answer=NO_ANSWER,
-                                  rules=assistant_rules(product.id))
-    messages = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": "资料：\n\n" + "\n\n".join(parts) + f"\n\n用户的问题：{message}"},
-    ]
+                                  rules=assistant_rules(product.id), tag_info=TAG_INFO,
+                                  tag_companion=TAG_COMPANION, tag_crisis=TAG_CRISIS)
+    if watch:
+        system += "\n\n提醒：用户这句话里有需要留意的说法。请格外温和，先接住感受，并自然地问一句对方现在是否安全、身边有没有可以说话的人；如果你判断对方有伤害自己的念头，输出危机标记。"
+    messages = [{"role": "system", "content": system}]
+    for said, replied in history:
+        messages.append({"role": "user", "content": said})
+        messages.append({"role": "assistant", "content": replied})
+    messages.append({"role": "user", "content": f"资料：\n\n{material}\n\n用户这次说的话：{message}"})
     try:
-        result = llm.chat(messages, temperature=0.3)
+        result = llm.chat(messages, temperature=0.4)
     except Exception as e:  # noqa: BLE001
-        log.warning("对话生成失败，退回问答匹配：%s", e)
+        log.warning("对话生成失败：%s", e)
         return None
+
     text = result.text.strip()
+    if text.startswith(TAG_CRISIS):
+        return CRISIS
+    companion = text.startswith(TAG_COMPANION)
+    for tag in (TAG_INFO, TAG_COMPANION):
+        text = text.removeprefix(tag)
+    text = text.strip()
+    if TAG_CRISIS in text:
+        return CRISIS
     if not text or NO_ANSWER in text or "无法回答" in text[:12]:
         return None
+
+    if companion:
+        hits = blocked_terms(text, product.id, [], companion=True)
+        if hits or len(text) > MAX_COMPANION_CHARS:
+            log.warning("陪伴回应没通过检查（%s）", "、".join(hits) or "过长")
+            return Reply("companion", COMFORT, watch=watch)
+        return Reply("companion", text, model=result.model, watch=watch)
+
+    if not parts:
+        return None  # 没有资料却给出了信息类回答，不采用
     hits = blocked_terms(text, product.id, [c.points for c in cards])
     if hits or len(text) > MAX_AI_CHARS:
-        log.warning("对话回答没通过检查（%s），退回问答匹配", "、".join(hits) or "过长")
+        log.warning("对话回答没通过检查（%s）", "、".join(hits) or "过长")
         return None
     top = qa_hits[0] if qa_hits else None
-    related = _related(pool, top) if top else []
-    return Reply("ai", text, top, related, result.model)
+    return Reply("ai", text, top, _related(pool, top) if top else [], result.model, watch)
 
 
 def _related(pool: list[QAItem], item: QAItem, n: int = 3) -> list[QAItem]:
