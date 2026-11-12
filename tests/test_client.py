@@ -340,6 +340,7 @@ def test_companion_reply_and_history(cclient, ai):
     assert out["answer"].startswith("听起来这几天") and "【" not in out["answer"]
     system = ai.calls[0][0]["content"]
     assert "【陪伴】" in system and "先听，再回应" in system and "这不是心理咨询" in system
+    assert "不替对方解释为什么会这样" in system and "少用比喻" in system
     ask(cclient, token, "主要是工作上的方案一直没过")
     second = ai.calls[1]
     # 第二轮带上了第一轮的对话

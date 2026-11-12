@@ -80,7 +80,7 @@ VERBATIM_RISKS = ("mid", "high")
 NO_ANSWER = "【无法回答】"
 TAG_INFO, TAG_COMPANION, TAG_CRISIS = "【信息】", "【陪伴】", "【危机】"
 MAX_AI_CHARS = 400
-MAX_COMPANION_CHARS = 260
+MAX_COMPANION_CHARS = 200
 WATCH_CODE = "关注"
 # C 端对话只用写给用户和家属的卡片；写给伙伴的留给 B 端
 CHAT_AUDIENCES = ("user", "family")
