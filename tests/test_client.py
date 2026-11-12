@@ -385,6 +385,22 @@ def test_companion_does_not_repeat_sign_offs(cclient, ai):
     assert all("我在" not in t for t in qa.COMFORTS)
 
 
+@pytest.mark.parametrize("bad", [
+    "你问出来，说明已经在认真面对它了，这本身就很不容易。",
+    "你问这句话本身，就说明你心里其实一直清楚。",
+    "有些东西，是需要被看见、被稳稳托住的。",
+    "今晚把那个画面画个圈，写上一句话，就当是给过去的自己留一盏小灯。",
+])
+def test_companion_blocks_overreading_and_jargon(cclient, ai, bad):
+    from app import qa
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n" + bad]
+    out = ask(cclient, token, "我不知道什么叫被谁理解，用什么方式接住")
+    assert out["kind"] == "companion" and out["answer"] in qa.COMFORTS
+    system = ai.calls[0][0]["content"]
+    assert "说得太绕了" in system and "不用心理咨询行话" in system and "接住感受" not in system
+
+
 def test_model_can_escalate_to_crisis(cclient, ai, tokens):
     token = login(cclient)
     ai.replies = ["【危机】"]

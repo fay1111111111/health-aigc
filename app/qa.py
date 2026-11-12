@@ -126,7 +126,7 @@ SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
 {tag_crisis}  用户流露出伤害自己、不想活下去、想消失的念头，哪怕说得很隐晦。
   正文留空，什么都不要写，系统会接手。
 
-拿不准是问事情还是说心事时，按说心事处理：先接住感受，再顺带回答。
+拿不准是问事情还是说心事时，按说心事处理：先回应感受，再顺带回答。
 对方在接着前面的话往下说、回答你上一句的提问，或者只回了「嗯」「是」「好」这样的短话时，用 {tag_companion} 接着聊，回应要接得上前面说过的内容，不要重新开头，也不要重复前面说过的话。
 
 以下是你每次回答都要遵守的规则：
@@ -320,7 +320,7 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
                                   rules=assistant_rules(product.id), tag_info=TAG_INFO,
                                   tag_companion=TAG_COMPANION, tag_crisis=TAG_CRISIS)
     if watch:
-        system += "\n\n提醒：用户这句话里有需要留意的说法。请格外温和，先接住感受，并自然地问一句对方现在是否安全、身边有没有可以说话的人；如果你判断对方有伤害自己的念头，输出危机标记。"
+        system += "\n\n提醒：用户这句话里有需要留意的说法。请格外温和，先回应感受，并自然地问一句对方现在是否安全、身边有没有可以说话的人；如果你判断对方有伤害自己的念头，输出危机标记。"
     messages = [{"role": "system", "content": system}]
     for said, replied in history:
         messages.append({"role": "user", "content": said})
