@@ -102,6 +102,7 @@ SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
   正文留空，什么都不要写，系统会接手。
 
 拿不准是问事情还是说心事时，按说心事处理：先接住感受，再顺带回答。
+对方在接着前面的话往下说、回答你上一句的提问，或者只回了「嗯」「是」「好」这样的短话时，用 {tag_companion} 接着聊，回应要接得上前面说过的内容，不要重新开头，也不要重复前面说过的话。
 
 以下是你每次回答都要遵守的规则：
 
@@ -209,8 +210,9 @@ def published(session: Session, product: str) -> list[QAItem]:
 
 
 def answer(session: Session, product: Product, message: str, scene: str = "c", code: str = "",
-           llm: LLM | None = None, history: list[tuple[str, str]] | None = None) -> Reply:
-    """history 是这位用户最近几轮的（用户说的, 助手答的），让大模型接得上前面的话。"""
+           llm: LLM | None = None, history: list[tuple[str, str]] | None = None, talking: bool = False) -> Reply:
+    """history 是这位用户最近几轮的（用户说的, 助手答的），让大模型接得上前面的话。
+    talking=True 表示上一轮是陪伴回应、对方正在说心事：这时「嗯」「好」也交给大模型接，答不了也不甩推荐问题。"""
     items = published(session, product.id)
     by_code = {i.code: i for i in items}
     risk_item = by_code.get(RISK_CODE)
@@ -232,7 +234,8 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
     plain = _norm(message)
     if len(plain) <= 16 and any(k in plain for k in _WHOAMI):
         return Reply("chat", WHOAMI)
-    if plain in _HELLO or plain in _THANKS:
+    use_llm = llm is not None and get_settings().chat_mode == "llm"
+    if (plain in _HELLO or plain in _THANKS) and not (talking and use_llm):
         text = HELLO if plain in _HELLO else THANKS
         return Reply("chat", text, None, top_questions(pool, prefer or "learn", 3) if plain in _HELLO else [])
 
@@ -247,7 +250,7 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
     if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS and not watch:
         return Reply("answer", best.answer, best, _related(pool, best))
 
-    if llm is not None and get_settings().chat_mode == "llm":
+    if use_llm:
         reply = _ai_answer(session, product, message, close, pool, llm, history or [], watch)
         if reply is CRISIS:
             return crisis
@@ -255,7 +258,7 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
             return reply
 
     # 没开大模型，或大模型答不了 / 没通过检查
-    if watch or (is_feeling(message) and best_score < ANSWER_SCORE):
+    if watch or ((talking or is_feeling(message)) and best_score < ANSWER_SCORE):
         return Reply("companion", COMFORT, watch=watch)  # 在说心事：给一句固定的回应，不拿问答去堵
     if best and best_score >= ANSWER_SCORE:
         return Reply("answer", best.answer, best, _related(pool, best))

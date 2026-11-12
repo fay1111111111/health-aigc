@@ -235,24 +235,27 @@ def home(scene: Literal["c", "partner"] = "c", _: ClientUser = Depends(current_c
         {"id": c, "name": names[c], "questions": [_q(i) for i in qa.top_questions(pool, c, 20)]} for c in wanted]}
 
 
-HISTORY_TURNS = 4
+HISTORY_TURNS = 6
 HISTORY_MINUTES = 60
 
 
-def _recent_turns(session: Session, user_id: int) -> list[tuple[str, str]]:
-    """最近一小时内的几轮对话，交给大模型接上下文。危机回应不带进去，免得模型照着固定话术说。"""
+def _recent_turns(session: Session, user_id: int) -> tuple[list[tuple[str, str]], bool]:
+    """最近一小时内的几轮对话，交给大模型接上下文；第二个值表示上一轮是不是陪伴回应（对方正在说心事）。
+    危机回应不带进去，免得模型照着固定话术说。"""
     rows = session.scalars(
         select(ChatMessage).where(ChatMessage.user_id == user_id, ChatMessage.kind.in_(["ai", "companion", "answer", "chat"]),
                                   ChatMessage.created_at > now() - timedelta(minutes=HISTORY_MINUTES))
         .order_by(ChatMessage.id.desc()).limit(HISTORY_TURNS))
-    return [(m.question, m.answer) for m in reversed(list(rows))]
+    rows = list(reversed(list(rows)))
+    return [(m.question, m.answer) for m in rows], bool(rows) and rows[-1].kind == "companion"
 
 
 @router.post("/chat")
 def chat(body: ChatIn, user: ClientUser = Depends(current_client), session: Session = Depends(get_session),
          llm: LLM = Depends(get_llm)):
     product = load_product()
-    reply = qa.answer(session, product, body.message, body.scene, body.code, llm, _recent_turns(session, user.id))
+    history, talking = _recent_turns(session, user.id)
+    reply = qa.answer(session, product, body.message, body.scene, body.code, llm, history, talking)
     code = qa.WATCH_CODE if reply.watch else (reply.item.code if reply.item else "")
     msg = ChatMessage(product=product.id, user_id=user.id, scene=body.scene, question=body.message.strip(),
                       answer=reply.text, kind=reply.kind, qa_code=code)

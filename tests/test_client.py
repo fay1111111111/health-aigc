@@ -348,6 +348,24 @@ def test_companion_reply_and_history(cclient, ai):
     assert second[1]["content"] == "最近压力好大，躺下脑子就停不下来" and second[2]["content"].startswith("听起来")
 
 
+def test_companion_conversation_stays_continuous(cclient, ai):
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n听起来哪边都歇不下来。这种累是最近才有的吗？",
+                  "【陪伴】\n嗯，有一阵子了，那确实耗人。",
+                  "【无法回答】"]
+    assert ask(cclient, token, "一个人待着也累，凑热闹也累")["kind"] == "companion"
+    # 陪伴中回一个「嗯」，交给模型接着聊，不回「不客气」
+    out = ask(cclient, token, "嗯")
+    assert out["kind"] == "companion" and "不客气" not in out["answer"]
+    assert [m["role"] for m in ai.calls[1]] == ["system", "user", "assistant", "user"]
+    assert "接着前面的话往下说" in ai.calls[1][0]["content"]
+    # 模型这轮没接住，也不甩「我不太确定你问的是哪一个」和推荐问题
+    out = ask(cclient, token, "有一阵子了")
+    assert out["kind"] == "companion" and out["related"] == []
+    # 不在陪伴中时，「谢谢」照常
+    assert ask(cclient, login(cclient, "b"), "谢谢")["answer"] == "不客气。还有想了解的，随时问我。"
+
+
 def test_model_can_escalate_to_crisis(cclient, ai, tokens):
     token = login(cclient)
     ai.replies = ["【危机】"]
