@@ -77,7 +77,8 @@ def gen_out(g: Generation) -> dict:
 def card_out(c: KnowledgeCard) -> dict:
     return {"id": c.id, "pool": c.product, "domain": c.domain, "topic": c.topic, "points": c.points,
             "source": c.source, "risk_level": c.risk_level, "tags": c.tags, "origin": c.origin,
-            "review_status": c.review_status}
+            "review_status": c.review_status, "questions": c.questions or [], "use": c.use,
+            "audience": c.audience, "boundary": c.boundary}
 
 
 def get_gen(session: Session, gen_id: int) -> Generation:
@@ -205,7 +206,7 @@ def list_knowledge(q: str = "", status: Literal["approved", "pending", "rejected
     """status=pending 是待人工审核的中高风险卡片。"""
     pools = load_product().pools()
     if q.strip() and status == "approved":
-        cards = knowledge.search(session, pools, q, llm, k=20)
+        cards = knowledge.search(session, pools, q, llm, k=20, uses=None)
     else:
         cards = session.scalars(select(KnowledgeCard).where(
             KnowledgeCard.product.in_(pools), KnowledgeCard.active.is_(True),

@@ -81,7 +81,10 @@ NO_ANSWER = "【无法回答】"
 TAG_INFO, TAG_COMPANION, TAG_CRISIS = "【信息】", "【陪伴】", "【危机】"
 MAX_AI_CHARS = 400
 MAX_COMPANION_CHARS = 260
-WATCH_CODE = "关注"  # 记在对话记录的 qa_code 里，后台据此列出「需要留意」的对话
+WATCH_CODE = "关注"
+# C 端对话只用写给用户和家属的卡片；写给伙伴的留给 B 端
+CHAT_AUDIENCES = ("user", "family")
+CARD_LABELS = {"knowledge": "知识卡片", "companion": "陪伴参考", "practice": "小练习", "referral": "转介参考"}  # 记在对话记录的 qa_code 里，后台据此列出「需要留意」的对话
 
 SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
 
@@ -92,9 +95,9 @@ SYSTEM_PROMPT = """你是「{app}」小程序里的 AI 问答助手。
 
 {tag_info}  用户在问事情（服务、体验、睡眠知识、学习等）。
   只根据用户消息里「资料」部分的内容回答。资料里没有、或者和问题对不上的，正文只写 {no_answer}，不要自己发挥，不要用常识补充。
-  资料里标了「待确认」的事项不要给出具体数字或承诺。
+  资料里标了「待确认」的事项不要给出具体数字或承诺。资料后面写了「使用边界」的，严格照边界用。
 {tag_companion}  用户在说自己的感受、压力、心事，或者睡不着的烦躁。
-  按下面「倾听与陪伴」的规则回应，不需要资料。
+  按下面「倾听与陪伴」的规则回应。资料里的[陪伴参考][小练习][转介参考]可以借用其中的视角和做法，用自己的话说，不照搬原文，不提书名和人名；对不上就不用。
 {tag_crisis}  用户流露出伤害自己、不想活下去、想消失的念头，哪怕说得很隐晦。
   正文留空，什么都不要写，系统会接手。
 
@@ -270,7 +273,7 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
     settings = get_settings()
     try:
         cards = knowledge.search(session, product.pools(), message, llm, k=settings.chat_knowledge_top_k,
-                                 max_risk=product.generation_max_risk)
+                                 max_risk=product.generation_max_risk, audiences=CHAT_AUDIENCES)
     except Exception as e:  # noqa: BLE001  知识库不可用时只用问答清单
         log.warning("知识库检索失败：%s", e)
         cards = []
@@ -280,7 +283,10 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
         pending = f"\n（待确认：{i.pending}）" if i.pending else ""
         parts.append(f"[审核过的问答] 问：{i.question}\n答：{i.answer}{pending}")
     for c in cards:
-        parts.append(f"[知识卡片] {c.topic}：{c.points}")
+        label = CARD_LABELS.get(c.use, "知识卡片")
+        family = "（写给家属的）" if c.audience == "family" else ""
+        limit = f"\n（使用边界：{c.boundary}）" if c.boundary else ""
+        parts.append(f"[{label}]{family} {c.topic}：{c.points}{limit}")
     material = "\n\n".join(parts) if parts else "（这次没有找到相关资料）"
     system = SYSTEM_PROMPT.format(app="药王山沁养", description=product.description, no_answer=NO_ANSWER,
                                   rules=assistant_rules(product.id), tag_info=TAG_INFO,
@@ -311,7 +317,7 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
         return None
 
     if companion:
-        hits = blocked_terms(text, product.id, [], companion=True)
+        hits = blocked_terms(text, product.id, [c.points for c in cards], companion=True)
         if hits or len(text) > MAX_COMPANION_CHARS:
             log.warning("陪伴回应没通过检查（%s）", "、".join(hits) or "过长")
             return Reply("companion", COMFORT, watch=watch)

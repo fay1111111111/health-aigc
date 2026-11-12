@@ -48,6 +48,11 @@ _UPGRADES = [
     "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS origin VARCHAR(16) DEFAULT 'manual'",
     "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS review_status VARCHAR(16) DEFAULT 'approved'",
     "CREATE INDEX IF NOT EXISTS ix_knowledge_cards_review_status ON knowledge_cards (review_status)",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS questions JSON DEFAULT '[]'",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS use VARCHAR(16) DEFAULT 'knowledge'",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS audience VARCHAR(16) DEFAULT 'user'",
+    "ALTER TABLE knowledge_cards ADD COLUMN IF NOT EXISTS boundary TEXT DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS ix_knowledge_cards_use ON knowledge_cards (use)",
 ]
 
 

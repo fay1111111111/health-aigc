@@ -250,6 +250,69 @@ def test_ai_uses_knowledge_cards_and_blocks_copying(cclient, ai, tokens):
     assert ask(cclient, token, "睡前可以做点什么让自己放松")["kind"] != "ai"
 
 
+def test_card_use_and_audience_shape_what_chat_sees(cclient, ai):
+    from app import knowledge
+    C = knowledge.CardIn
+    cards = [
+        C(topic="陪伴：睡不着时先不跟自己较劲", points="睡不着的时候，先允许自己醒着，不必逼自己马上睡。", use="companion",
+          questions=["躺下就停不下来"], boundary="不替用户解释原因"),
+        C(topic="背景：书里的理论框架", points="这是给老师看的理论背景，不进对话。", use="background"),
+        C(topic="伙伴：手法操作次序", points="这是给伙伴的操作对照，不给用户。", audience="partner"),
+        C(topic="家属：家人睡不好时怎么陪", points="家人睡不好时，少催促，多陪着安静待一会儿。", audience="family"),
+    ]
+    with db.SessionLocal() as s:
+        knowledge.add_cards(s, "sleep", cards, ai)
+        found = knowledge.search(s, ["sleep"], "睡不着", ai, k=10, audiences=("user", "family"))
+        topics = {c.topic for c in found}
+        assert "背景：书里的理论框架" not in topics and "伙伴：手法操作次序" not in topics
+        assert {"陪伴：睡不着时先不跟自己较劲", "家属：家人睡不好时怎么陪"} <= topics
+        # 后台查看时不过滤
+        assert len(knowledge.search(s, ["sleep"], "睡不着", ai, k=10, uses=None)) == 4
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n醒着也没关系，先不用逼自己马上睡着。"]
+    out = ask(cclient, token, "躺下就停不下来，好烦")
+    assert out["kind"] == "companion"
+    system, user = ai.calls[-1][0]["content"], ai.calls[-1][-1]["content"]
+    assert "[陪伴参考] 陪伴：睡不着时先不跟自己较劲" in user and "使用边界：不替用户解释原因" in user
+    assert "[知识卡片]（写给家属的） 家属" in user
+    assert "背景" not in user and "伙伴：手法" not in user
+    assert "不提书名和人名" in system and "传统养生说法" in system
+
+
+def test_import_script_reads_folder_and_routes_review(tmp_path, ai, monkeypatch):
+    import json
+    from scripts import import_knowledge
+    rows = [
+        {"topic": "低风险知识", "points": "白天多见光。", "use": "knowledge", "risk_level": "low"},
+        {"topic": "中风险陪伴", "points": "先接住。", "use": "companion", "audience": "family", "risk_level": "mid"},
+    ]
+    (tmp_path / "a.jsonl").write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows), encoding="utf-8")
+    (tmp_path / "b.jsonl").write_text(json.dumps({"topic": "坏卡", "points": "x", "use": "family"}), encoding="utf-8")
+    with pytest.raises(SystemExit, match="b.jsonl 第 1 行"):
+        import_knowledge.read_cards([tmp_path])
+    (tmp_path / "b.jsonl").unlink()
+    cards = import_knowledge.read_cards([tmp_path])
+    db.Base.metadata.drop_all(db.engine)
+    db.init_db()
+    with db.SessionLocal() as s:
+        out = knowledge_add(s, cards, ai)
+    assert {(r.topic, r.review_status, r.audience) for r in out} == {
+        ("低风险知识", "approved", "user"), ("中风险陪伴", "pending", "family")}
+
+
+def knowledge_add(s, cards, ai):
+    from app import knowledge
+    return knowledge.add_cards(s, "sleep", cards, ai, review_status=None)
+
+
+def test_repo_cards_are_valid():
+    from pathlib import Path
+    from scripts import import_knowledge
+    folder = Path(__file__).parent.parent / "products" / "sleep" / "knowledge" / "cards"
+    cards = import_knowledge.read_cards([folder])
+    assert len(cards) > 200 and len({c.topic for c in cards}) == len(cards)
+
+
 def test_ai_failure_falls_back(cclient, ai, monkeypatch):
     token = login(cclient)
     def boom(messages, temperature=0.7):

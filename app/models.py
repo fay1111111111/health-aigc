@@ -59,6 +59,11 @@ class KnowledgeCard(Base):
     source_id: Mapped[int | None] = mapped_column(ForeignKey("sources.id"), nullable=True)
     risk_level: Mapped[str] = mapped_column(String(8), default="low")  # low / mid / high
     tags: Mapped[list] = mapped_column(JSON, default=list)
+    questions: Mapped[list] = mapped_column(JSON, default=list)  # 用户可能的问法，帮助检索
+    # knowledge 知识 / companion 陪伴参考 / practice 小练习 / referral 转介 / background 只作背景，不进对话
+    use: Mapped[str] = mapped_column(String(16), default="knowledge", index=True)
+    audience: Mapped[str] = mapped_column(String(16), default="user")  # user 用户 / family 家属 / partner 伙伴
+    boundary: Mapped[str] = mapped_column(Text, default="")  # 使用边界，给模型看
     embedding: Mapped[list | None] = mapped_column(Embedding(get_settings().embedding_dim), nullable=True)
     origin: Mapped[str] = mapped_column(String(16), default="manual")  # manual 人工整理 / auto 自动提取
     review_status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved / pending / rejected

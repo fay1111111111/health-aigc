@@ -26,10 +26,20 @@ class CardIn(BaseModel):
     risk_level: str = Field("low", pattern="^(low|mid|high)$")
     domain: str = ""
     tags: list[str] = Field(default_factory=list)
+    questions: list[str] = Field(default_factory=list)
+    use: str = Field("knowledge", pattern="^(knowledge|companion|practice|referral|background)$")
+    audience: str = Field("user", pattern="^(user|family|partner)$")
+    boundary: str = ""
 
 
-def card_text(topic: str, points: str) -> str:
-    return f"{topic}\n{points}"
+# 对话里能用的卡片；background 只作背景（给老师、伙伴看），不进对话
+CHAT_USES = ("knowledge", "companion", "practice", "referral")
+
+
+def card_text(topic: str, points: str, questions: list[str] | None = None) -> str:
+    """向量化用的文本：主题、要点，再加上用户可能的问法，让口语提问更容易找到。"""
+    text = f"{topic}\n{points}"
+    return f"{text}\n" + "\n".join(questions) if questions else text
 
 
 def existing_topics(session: Session, pool: str) -> set[str]:
@@ -51,7 +61,7 @@ def add_cards(session: Session, pool: str, cards: list[CardIn], llm: LLM, skip_e
     if not cards:
         return []
     if vectors is None:
-        vectors = llm.embed([card_text(c.topic, c.points) for c in cards])
+        vectors = llm.embed([card_text(c.topic, c.points, c.questions) for c in cards])
     rows = [
         KnowledgeCard(product=pool, embedding=v, origin=origin, source_id=source_id,
                       review_status=review_status or ("approved" if c.risk_level == "low" else "pending"),
@@ -71,13 +81,19 @@ def cosine(a: list[float], b: list[float]) -> float:
 
 
 def search(session: Session, pools: list[str] | str, query: str, llm: LLM, k: int = 5,
-           max_risk: str = "high", include_pending: bool = False, qvec: list[float] | None = None) -> list[KnowledgeCard]:
+           max_risk: str = "high", include_pending: bool = False, qvec: list[float] | None = None,
+           uses: tuple[str, ...] | None = CHAT_USES, audiences: tuple[str, ...] | None = None) -> list[KnowledgeCard]:
+    """uses=None 不按用途过滤（后台查看用）；audiences=None 不按对象过滤。"""
     pools = [pools] if isinstance(pools, str) else pools
     allowed = RISK_ORDER[:RISK_ORDER.index(max_risk) + 1]
     statuses = ["approved", "pending"] if include_pending else ["approved"]
     base = select(KnowledgeCard).where(
         KnowledgeCard.product.in_(pools), KnowledgeCard.active.is_(True), KnowledgeCard.embedding.is_not(None),
         KnowledgeCard.risk_level.in_(allowed), KnowledgeCard.review_status.in_(statuses))
+    if uses is not None:
+        base = base.where(KnowledgeCard.use.in_(uses))
+    if audiences is not None:
+        base = base.where(KnowledgeCard.audience.in_(audiences))
     if qvec is None:
         qvec = llm.embed([query])[0]
 
@@ -96,7 +112,7 @@ def search(session: Session, pools: list[str] | str, query: str, llm: LLM, k: in
 
 def most_similar(session: Session, pools: list[str], vec: list[float], llm: LLM) -> tuple[KnowledgeCard | None, float]:
     """找出库里和这条向量最像的卡片（去重用），返回卡片和相似度。"""
-    hits = search(session, pools, "", llm, k=1, include_pending=True, qvec=vec)
+    hits = search(session, pools, "", llm, k=1, include_pending=True, qvec=vec, uses=None)
     if not hits:
         return None, 0.0
     return hits[0], cosine(hits[0].embedding, vec)
