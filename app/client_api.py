@@ -235,8 +235,8 @@ def home(scene: Literal["c", "partner"] = "c", _: ClientUser = Depends(current_c
         {"id": c, "name": names[c], "questions": [_q(i) for i in qa.top_questions(pool, c, 20)]} for c in wanted]}
 
 
-HISTORY_TURNS = 6
-HISTORY_MINUTES = 60
+HISTORY_TURNS = 12
+HISTORY_MINUTES = 180
 
 
 def _recent_turns(session: Session, user_id: int) -> tuple[list[tuple[str, str]], bool]:
