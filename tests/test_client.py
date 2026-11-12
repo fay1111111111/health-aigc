@@ -366,6 +366,25 @@ def test_companion_conversation_stays_continuous(cclient, ai):
     assert ask(cclient, login(cclient, "b"), "谢谢")["answer"] == "不客气。还有想了解的，随时问我。"
 
 
+def test_companion_does_not_repeat_sign_offs(cclient, ai):
+    from app import qa
+    token = login(cclient)
+    ai.replies = ["【陪伴】\n哎，两头都累，挺磨人的。最近是哪种场合最累？我在。",
+                  "【陪伴】\n是啊，开会一多人就被掏空了。我在。",
+                  "", ""]
+    first = ask(cclient, token, "一个人待着也累，凑热闹也累")
+    assert first["answer"].endswith("我在。")
+    second = ask(cclient, token, "上班开会最累")
+    assert second["answer"] == "是啊，开会一多人就被掏空了。"
+    system = ai.calls[0][0]["content"]
+    assert "像朋友在微信上回消息" in system and "整段对话最多说一次" in system and "可以说「我在」" not in system
+    # 模型连着没接住时，固定回应轮着换，不重复
+    third, fourth = ask(cclient, token, "嗯"), ask(cclient, token, "就是很烦")
+    assert third["answer"] in qa.COMFORTS and fourth["answer"] in qa.COMFORTS
+    assert third["answer"] != fourth["answer"]
+    assert all("我在" not in t for t in qa.COMFORTS)
+
+
 def test_model_can_escalate_to_crisis(cclient, ai, tokens):
     token = login(cclient)
     ai.replies = ["【危机】"]
@@ -392,7 +411,7 @@ def test_companion_reply_rejected_uses_fixed_comfort(cclient, ai, bad):
     token = login(cclient)
     ai.replies = [bad]
     out = ask(cclient, token, "今天好难过，什么都不想做")
-    assert out["kind"] == "companion" and out["answer"] == qa.COMFORT
+    assert out["kind"] == "companion" and out["answer"] in qa.COMFORTS
 
 
 def test_watch_phrase_adds_care_and_flags_for_staff(cclient, ai, tokens):
@@ -410,7 +429,7 @@ def test_watch_phrase_adds_care_and_flags_for_staff(cclient, ai, tokens):
 def test_feelings_without_model_get_comfort_not_a_brochure(cclient):
     token = login(cclient)  # 没开大模型
     out = ask(cclient, token, "今天好难过")
-    assert out["kind"] == "companion" and out["answer"] == qa.COMFORT and out["related"] == []
+    assert out["kind"] == "companion" and out["answer"] in qa.COMFORTS and out["related"] == []
     # 明确在问事情的，照常给问答
     assert ask(cclient, token, "做的时候疼不疼啊")["kind"] == "answer"
 

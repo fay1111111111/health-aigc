@@ -63,7 +63,32 @@ THANKS = "不客气。还有想了解的，随时问我。"
 _HELLO = {"你好", "您好", "hi", "hello", "在吗", "在么", "嗨", "哈喽", "有人吗"}
 _THANKS = {"谢谢", "谢谢你", "多谢", "感谢", "好的", "好", "明白了", "知道了", "ok", "嗯", "嗯嗯", "好的谢谢"}
 # 用户在说心事，但大模型不可用或回答没过检查时用的固定回应
-COMFORT = "我在，慢慢说。不用急着把事情讲清楚，想到哪儿说到哪儿就好。如果此刻只想安静一会儿，也可以先慢慢呼气，比吸气再长一点，做几次。"
+# 几句轮着用，同一段对话里不重复，避免每次都是同一句
+COMFORTS = (
+    "嗯，你说，不用急着把事情理清楚，想到哪儿说到哪儿就好。",
+    "这样啊。要是愿意，可以多说一点，是哪一块最让你累？",
+    "嗯，听着就挺不好受的。想接着说就说，想先静一会儿也行。",
+    "是啊，这种时候脑子很难停下来。要不先慢慢呼几口气，呼气比吸气长一点，再接着聊。",
+    "能说出来就挺好的。后来呢？",
+)
+COMFORT = COMFORTS[0]
+# 「我在」这类收尾，同一段对话里只留第一次
+_SIGN_OFF = re.compile(r"\s*(?:我(?:一直)?在(?:的|这儿|这里|呢)?|慢慢说)[。！!～~，,]*\s*$")
+
+
+def comfort(history: list[tuple[str, str]] | None) -> str:
+    """挑一句前面几轮没说过的固定回应。"""
+    said = {a for _, a in history or []}
+    return next((t for t in COMFORTS if t not in said), COMFORTS[len(said) % len(COMFORTS)])
+
+
+def tidy_companion(text: str, history: list[tuple[str, str]] | None) -> str:
+    """前面已经说过「我在」的，这次去掉结尾的「我在」，免得每段都一样。"""
+    if any("我在" in a for _, a in history or []):
+        trimmed = _SIGN_OFF.sub("", text).strip()
+        if len(trimmed) >= 8:
+            return trimmed
+    return text
 _FEELING = (
     "难过", "难受", "伤心", "委屈", "想哭", "哭了", "焦虑", "烦躁", "心烦", "很烦", "压力", "好累", "太累", "心累", "孤独", "孤单",
     "害怕", "恐惧", "紧张", "心慌", "不安", "失落", "空虚", "迷茫", "无助", "自责", "愧疚", "生气", "愤怒", "憋屈", "没人理解",
@@ -259,7 +284,7 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
 
     # 没开大模型，或大模型答不了 / 没通过检查
     if watch or ((talking or is_feeling(message)) and best_score < ANSWER_SCORE):
-        return Reply("companion", COMFORT, watch=watch)  # 在说心事：给一句固定的回应，不拿问答去堵
+        return Reply("companion", comfort(history), watch=watch)  # 在说心事：给一句固定的回应，不拿问答去堵
     if best and best_score >= ANSWER_SCORE:
         return Reply("answer", best.answer, best, _related(pool, best))
     if close:
@@ -323,8 +348,8 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
         hits = blocked_terms(text, product.id, [c.points for c in cards], companion=True)
         if hits or len(text) > MAX_COMPANION_CHARS:
             log.warning("陪伴回应没通过检查（%s）", "、".join(hits) or "过长")
-            return Reply("companion", COMFORT, watch=watch)
-        return Reply("companion", text, model=result.model, watch=watch)
+            return Reply("companion", comfort(history), watch=watch)
+        return Reply("companion", tidy_companion(text, history), model=result.model, watch=watch)
 
     if not parts:
         return None  # 没有资料却给出了信息类回答，不采用
