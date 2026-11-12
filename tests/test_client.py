@@ -401,6 +401,20 @@ def test_companion_blocks_overreading_and_jargon(cclient, ai, bad):
     assert "说得太绕了" in system and "不用心理咨询行话" in system and "接住感受" not in system
 
 
+def test_feelings_not_hijacked_by_service_qa(cclient, ai):
+    token = login(cclient)
+    with db.SessionLocal() as s:  # 模拟服务器上还是旧关键词的情况
+        item = s.query(QAItem).filter_by(code="售后-04").one()
+        item.keywords = item.keywords + ["很累", "想哭"]
+        s.commit()
+    ai.replies = ["【陪伴】\n是啊，人累的时候，跟人打交道就更费劲了。最近是哪件事最磨人？"]
+    out = ask(cclient, token, "就是觉得很累，然后工作的人际关系很难处理")
+    assert out["kind"] == "companion" and out["related"] == []
+    # 明确问做完之后的反应，还是给审核过的原文
+    out = ask(cclient, token, "做完之后很累，正常吗")
+    assert out["kind"] == "answer" and out["answer"].startswith("少数人在体验后")
+
+
 def test_model_can_escalate_to_crisis(cclient, ai, tokens):
     token = login(cclient)
     ai.replies = ["【危机】"]

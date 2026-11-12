@@ -93,7 +93,10 @@ _FEELING = (
     "难过", "难受", "伤心", "委屈", "想哭", "哭了", "焦虑", "烦躁", "心烦", "很烦", "压力", "好累", "太累", "心累", "孤独", "孤单",
     "害怕", "恐惧", "紧张", "心慌", "不安", "失落", "空虚", "迷茫", "无助", "自责", "愧疚", "生气", "愤怒", "憋屈", "没人理解",
     "睡不着", "失眠", "胡思乱想", "停不下来", "静不下来", "脑子很乱", "心里很乱", "心里堵",
+    "很累", "特别累", "觉得累", "累了", "疲惫", "不开心", "郁闷", "烦死", "人际", "同事", "领导", "吵架", "委屈",
 )
+# 提到这些，说明是在问做颅骶放松前后的事，不是在说一般的心情
+_ABOUT_SERVICE = ("做完", "做了", "做之前", "做的时候", "体验", "颅骶", "老师", "上次做", "这次做", "门店", "预约")
 SUGGEST = "我不太确定你问的是哪一个，下面这几条里有你想了解的吗？"
 
 _PUNCT = re.compile(r"[\s\W_]+", re.UNICODE)
@@ -271,19 +274,22 @@ def answer(session: Session, product: Product, message: str, scene: str = "c", c
     best_score, best = (ranked[0][0], ranked[0][3]) if ranked else (0.0, None)
     close = [t[3] for t in ranked[:3] if t[0] >= SUGGEST_SCORE]
 
+    # 在说心情、或正在陪伴对话里，除非明确提到做颅骶放松的事，否则不拿问答去套
+    chatting = (talking or is_feeling(message)) and not any(t in message for t in _ABOUT_SERVICE)
     # 中高风险的问答对上了，原样给出
-    if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS and not watch:
+    if best and best_score >= ANSWER_SCORE and best.risk in VERBATIM_RISKS and not watch and not chatting:
         return Reply("answer", best.answer, best, _related(pool, best))
 
     if use_llm:
-        reply = _ai_answer(session, product, message, close, pool, llm, history or [], watch)
+        reply = _ai_answer(session, product, message, close, pool, llm, history or [], watch,
+                           strong=best_score >= ANSWER_SCORE and not chatting)
         if reply is CRISIS:
             return crisis
         if reply is not None:
             return reply
 
     # 没开大模型，或大模型答不了 / 没通过检查
-    if watch or ((talking or is_feeling(message)) and best_score < ANSWER_SCORE):
+    if watch or chatting:
         return Reply("companion", comfort(history), watch=watch)  # 在说心事：给一句固定的回应，不拿问答去堵
     if best and best_score >= ANSWER_SCORE:
         return Reply("answer", best.answer, best, _related(pool, best))
@@ -296,7 +302,7 @@ CRISIS = object()  # _ai_answer 的特殊返回值：大模型判断是危机信
 
 
 def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[QAItem], pool: list[QAItem],
-               llm: LLM, history: list[tuple[str, str]], watch: bool):
+               llm: LLM, history: list[tuple[str, str]], watch: bool, strong: bool = False):
     """让大模型回答或陪伴。返回 Reply；判断为危机返回 CRISIS；答不了、出错、没通过检查返回 None，由调用方兜底。"""
     settings = get_settings()
     try:
@@ -357,7 +363,8 @@ def _ai_answer(session: Session, product: Product, message: str, qa_hits: list[Q
     if hits or len(text) > MAX_AI_CHARS:
         log.warning("对话回答没通过检查（%s）", "、".join(hits) or "过长")
         return None
-    top = qa_hits[0] if qa_hits else None
+    # 只有问题明确对上某条问答时才推荐同类问题，免得聊心情时冒出不相干的推荐
+    top = qa_hits[0] if qa_hits and strong else None
     return Reply("ai", text, top, _related(pool, top) if top else [], result.model, watch)
 
 
