@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     embedding_dim: int = 1024
 
     # DeepSeek：默认通过百炼调用（用同一个 DASHSCOPE_API_KEY，不用另开账号）
-    bailian_deepseek_model: str = "deepseek-v4-flash"
+    bailian_deepseek_model: str = "deepseek-v4.1-flash"
     # 只有填了 DEEPSEEK_API_KEY 才改走 DeepSeek 官网接口；模型名以官网文档为准
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"

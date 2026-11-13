@@ -5,7 +5,7 @@ from app.llm import RoutedLLM
 def test_deepseek_goes_through_bailian_with_same_key():
     llm = RoutedLLM(Settings(dashscope_api_key="sk-bailian", deepseek_api_key=""))
     ds, qw = llm.providers["deepseek"], llm.providers["qwen"]
-    assert ds.model == "deepseek-v4-flash" and ds.client is qw.client
+    assert ds.model == "deepseek-v4.1-flash" and ds.client is qw.client
     assert str(ds.client.base_url).startswith("https://dashscope.aliyuncs.com")
     assert ds.extra_body == {"enable_thinking": False} and qw.extra_body is None
 
