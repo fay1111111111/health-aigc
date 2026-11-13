@@ -38,7 +38,9 @@ cp .env.example .env
 
 编辑 `.env`：
 - `POSTGRES_PASSWORD`：设一个强密码，并把 `DATABASE_URL` 里的 `change-me` 改成同一个密码
-- `DASHSCOPE_API_KEY`、`DEEPSEEK_API_KEY`：填入用户已有的 Key（如果旧项目的配置里有，可以从那里取，不要发到聊天里）
+- `DASHSCOPE_API_KEY`：阿里云百炼的 Key（不要发到聊天里）。千问、向量模型和备用的 DeepSeek 都用这一个 Key。
+- `DEEPSEEK_API_KEY`：一般留空。只有想改走 DeepSeek 官网接口时才填。
+- 配好后运行 `docker compose exec api python -m scripts.check_models`，确认主模型、备用模型、向量模型都能调通。
 - `API_PORT`：可沿用旧项目的端口，或选一个没被占用的端口
 - 模型名（`DASHSCOPE_CHAT_MODEL`、`EMBEDDING_MODEL`）：到百炼控制台确认当前可用的型号
 

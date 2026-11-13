@@ -38,9 +38,11 @@ class _Provider:
     name: str
     client: OpenAI
     model: str
+    extra_body: dict | None = None
 
     def chat(self, messages: list[dict], temperature: float) -> ChatResult:
-        resp = self.client.chat.completions.create(model=self.model, messages=messages, temperature=temperature)
+        resp = self.client.chat.completions.create(model=self.model, messages=messages, temperature=temperature,
+                                                   extra_body=self.extra_body)
         return ChatResult(text=(resp.choices[0].message.content or "").strip(), model=f"{self.name}:{self.model}")
 
 
@@ -53,10 +55,14 @@ class RoutedLLM:
             self.providers["qwen"] = _Provider(
                 "qwen", OpenAI(api_key=s.dashscope_api_key, base_url=s.dashscope_base_url, timeout=s.llm_timeout_seconds),
                 s.dashscope_chat_model)
-        if s.deepseek_api_key:
+        if s.deepseek_api_key:  # DeepSeek 官网接口
             self.providers["deepseek"] = _Provider(
                 "deepseek", OpenAI(api_key=s.deepseek_api_key, base_url=s.deepseek_base_url, timeout=s.llm_timeout_seconds),
                 s.deepseek_chat_model)
+        elif s.dashscope_api_key and s.bailian_deepseek_model:  # 百炼上的 DeepSeek，和千问共用一个 key
+            self.providers["deepseek"] = _Provider(
+                "deepseek", self.providers["qwen"].client, s.bailian_deepseek_model,
+                extra_body={"enable_thinking": False})  # 对话不需要长时间思考，关掉以免回复变慢
 
     def chat(self, messages: list[dict], temperature: float = 0.7) -> ChatResult:
         order = [p for p in (self.settings.llm_primary, self.settings.llm_fallback) if p in self.providers]
